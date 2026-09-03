@@ -145,10 +145,10 @@ const Routine = () => {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`min-h-14 px-8 py-3 rounded-full text-2xl font-bold border-4 transition-colors ${
+            className={`min-h-14 px-8 py-3 rounded-full text-2xl font-bold border-4 transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md ${
               filter === f 
-              ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-[#2E7D32] text-white border-[#2E7D32]') 
-              : (highContrast ? 'bg-black text-yellow-300 border-yellow-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50')
+              ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-emerald-700 text-white border-emerald-700 shadow-md') 
+              : (highContrast ? 'bg-black text-yellow-300 border-yellow-300' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50')
             }`}
           >
             {f}
@@ -170,25 +170,25 @@ const Routine = () => {
             return (
               <div 
                 key={routine._id} 
-                className={`flex flex-col sm:flex-row items-center justify-between p-6 rounded-3xl transition-all ${
+                className={`flex flex-col sm:flex-row items-center justify-between p-6 rounded-3xl transition-all duration-200 card-interactive ${
                   isDone 
-                  ? (highContrast ? 'bg-gray-900 border-2 border-yellow-300 opacity-75' : 'bg-green-50 border-2 border-green-200 shadow-sm') 
+                  ? (highContrast ? 'bg-gray-900 border-2 border-yellow-300 opacity-75' : 'bg-emerald-50/80 border-2 border-emerald-200 shadow-sm') 
                   : cardStyle
                 }`}
               >
                 <div className="flex items-center gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
-                  <div className={`text-6xl w-24 h-24 flex items-center justify-center rounded-2xl ${
-                    highContrast ? 'bg-black border border-yellow-300' : 'bg-gray-100'
+                  <div className={`text-6xl w-24 h-24 flex items-center justify-center rounded-2xl shadow-inner transition-transform hover:scale-105 ${
+                    highContrast ? 'bg-black border border-yellow-300' : 'bg-slate-100'
                   }`}>
                     {getCategoryIcon(routine.category)}
                   </div>
                   <div>
-                    <span className={`inline-block px-4 py-1 rounded-full text-xl font-bold mb-2 ${
-                      highContrast ? 'bg-yellow-300 text-black' : 'bg-blue-100 text-blue-800'
+                    <span className={`inline-block px-4 py-1 rounded-full text-xl font-bold mb-2 shadow-xs ${
+                      highContrast ? 'bg-yellow-300 text-black' : 'bg-blue-100 text-blue-800 border border-blue-200'
                     }`}>
                       {timeStr}
                     </span>
-                    <h3 className={`text-3xl font-bold ${isDone && !highContrast ? 'line-through text-gray-500' : ''}`}>
+                    <h3 className={`text-3xl font-extrabold ${isDone && !highContrast ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                       {routine.title}
                     </h3>
                   </div>
@@ -198,8 +198,8 @@ const Routine = () => {
                   {soundEnabled && (
                     <button 
                       onClick={() => speak(`At ${timeStr}, ${routine.title}`)}
-                      className={`min-h-16 w-16 flex items-center justify-center rounded-2xl text-3xl border-2 ${
-                        highContrast ? 'border-yellow-300' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                      className={`min-h-16 w-16 flex items-center justify-center rounded-2xl text-3xl border-2 transition-all active:scale-90 hover:scale-105 shadow-sm hover:shadow-md ${
+                        highContrast ? 'border-yellow-300' : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'
                       }`}
                       title="Read aloud"
                     >
@@ -210,10 +210,10 @@ const Routine = () => {
                   <button
                     onClick={() => handleComplete(routine)}
                     disabled={isDone}
-                    className={`flex-grow sm:flex-grow-0 min-h-16 px-8 py-4 rounded-2xl text-2xl font-bold shadow-md transition-transform active:scale-95 flex items-center justify-center gap-3 ${
+                    className={`flex-grow sm:flex-grow-0 min-h-16 px-8 py-4 rounded-2xl text-2xl font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 ${
                       isDone
-                      ? 'bg-green-600 text-white cursor-default'
-                      : (highContrast ? 'bg-yellow-300 text-black border-2 border-yellow-300' : 'bg-blue-600 hover:bg-blue-700 text-white')
+                      ? 'bg-emerald-600 text-white cursor-default shadow-sm'
+                      : (highContrast ? 'bg-yellow-300 text-black border-2 border-yellow-300' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg text-white')
                     }`}
                   >
                     {isDone ? (

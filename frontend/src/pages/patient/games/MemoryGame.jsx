@@ -163,16 +163,19 @@ export default function MemoryGame() {
             <div 
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className={`aspect-square rounded-3xl flex items-center justify-center text-7xl cursor-pointer transition-all duration-300 transform shadow-lg
-                ${card.isFlipped || card.isMatched ? 'bg-white rotate-0' : 'bg-teal-500 hover:bg-teal-400 rotate-y-180'}
-                ${card.isMatched ? 'border-8 border-green-400' : ''}
-              `}
+              className={`aspect-square rounded-3xl flex items-center justify-center text-7xl cursor-pointer transition-all duration-300 transform select-none ${
+                card.isMatched 
+                ? 'bg-emerald-50 border-4 border-emerald-500 shadow-lg scale-100 animate-pulseMatch'
+                : card.isFlipped 
+                ? 'bg-white border-4 border-blue-400 shadow-2xl scale-105 rotate-0'
+                : 'bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl border-2 border-emerald-400'
+              }`}
             >
-              <span className={`transition-opacity duration-300 ${card.isFlipped || card.isMatched ? 'opacity-100' : 'opacity-0'}`}>
-                {card.isFlipped || card.isMatched ? card.item : '✨'}
+              <span className={`transition-all duration-300 ${card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+                {card.isFlipped || card.isMatched ? card.item : ''}
               </span>
               {!(card.isFlipped || card.isMatched) && (
-                <span className="absolute text-5xl text-white opacity-100">✨</span>
+                <span className="absolute text-5xl text-white/90 drop-shadow-sm">✨</span>
               )}
             </div>
           ))}

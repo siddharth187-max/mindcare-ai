@@ -203,10 +203,11 @@ export default function PatternGame() {
               <button
                 key={c.id}
                 onMouseDown={() => handleColorClick(c.id, c.hz)}
-                className={`aspect-square rounded-[3rem] transition-all duration-200 shadow-xl
-                  ${activeColor === c.id ? c.active + ' scale-95 brightness-110' : c.color + ' hover:brightness-110 hover:-translate-y-1'}
-                  ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'}
-                `}
+                className={`aspect-square rounded-[3rem] transition-all duration-150 select-none ${
+                  activeColor === c.id 
+                  ? c.active + ' scale-95 brightness-125 ring-8 ring-white/70 shadow-2xl animate-pulseMatch' 
+                  : c.color + ' shadow-xl hover:shadow-2xl hover:scale-103 hover:brightness-110 active:scale-95'
+                } ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-85 cursor-not-allowed' : 'cursor-pointer'}`}
                 aria-label={`Play ${c.id} tone`}
               />
             ))}
