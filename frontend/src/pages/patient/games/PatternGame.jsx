@@ -5,10 +5,10 @@ import { playChime, speakText } from '../../../hooks/useVoice';
 import ConfettiCanvas from '../../../components/ConfettiCanvas';
 
 const COLORS = [
-  { id: 'blue', color: 'bg-blue-500', active: 'bg-blue-300', hz: 261.63 },
-  { id: 'green', color: 'bg-green-500', active: 'bg-green-300', hz: 329.63 },
-  { id: 'yellow', color: 'bg-yellow-400', active: 'bg-yellow-200', hz: 392.00 },
-  { id: 'red', color: 'bg-red-500', active: 'bg-red-300', hz: 523.25 }
+  { id: 'blue', name: 'Blue Chime', color: 'bg-blue-600', active: 'bg-cyan-400 ring-8 ring-cyan-300 shadow-[0_0_30px_rgba(6,182,212,0.8)]', hz: 261.63 },
+  { id: 'green', name: 'Green Chime', color: 'bg-emerald-600', active: 'bg-emerald-300 ring-8 ring-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.8)]', hz: 329.63 },
+  { id: 'yellow', name: 'Amber Chime', color: 'bg-amber-500', active: 'bg-yellow-200 ring-8 ring-yellow-200 shadow-[0_0_30px_rgba(250,204,21,0.8)]', hz: 392.00 },
+  { id: 'red', name: 'Crimson Chime', color: 'bg-rose-600', active: 'bg-rose-300 ring-8 ring-rose-300 shadow-[0_0_30px_rgba(244,63,94,0.8)]', hz: 523.25 }
 ];
 
 export default function PatternGame() {
@@ -32,6 +32,7 @@ export default function PatternGame() {
   useEffect(() => {
     const fetchPatientAndSetup = async () => {
       try {
+        const pRes = await api.get('/patients/me');
         const pat = pRes.data.patient || pRes.data;
         const pId = pat._id || pat.id;
         setPatientId(pId);
@@ -53,106 +54,96 @@ export default function PatternGame() {
   }, []);
 
   const playSound = (hz) => {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(hz, ctx.currentTime);
-    gain.gain.setValueAtTime(0.5, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
+    try {
+      playChime('note', hz);
+    } catch (e) {
+      console.warn("Audio chime error:", e);
+    }
   };
 
-  const startRound = (currentSequence) => {
-    isLocked.current = true;
-    setIsPlaying(true);
+  const startRound = () => {
     setHasStarted(true);
-    
-    const newSeq = currentSequence ? [...currentSequence] : [...sequence];
-    if (!currentSequence) {
-      newSeq.push(COLORS[Math.floor(Math.random() * COLORS.length)].id);
-      setSequence(newSeq);
-      setRound(r => r + 1);
+    isLocked.current = true;
+    const newRound = round + 1;
+    setRound(newRound);
+
+    const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)].id;
+    const newSeq = [...sequence, randomColor];
+    setSequence(newSeq);
+    setUserStep(0);
+
+    setStatusText(`Round ${newRound} of ${targetRounds}: Listen closely...`);
+    speakText("Listen closely");
+    playSequence(newSeq);
+  };
+
+  const playSequence = async (seq) => {
+    setIsPlaying(true);
+    await new Promise(r => setTimeout(r, 800));
+
+    for (let i = 0; i < seq.length; i++) {
+      const colorId = seq[i];
+      const colorObj = COLORS.find(c => c.id === colorId);
+      
+      setActiveColor(colorId);
+      playSound(colorObj.hz);
+
+      await new Promise(r => setTimeout(r, 600));
+      setActiveColor(null);
+      await new Promise(r => setTimeout(r, 250));
     }
-    
-    setStatusText(`Round ${round + (currentSequence ? 0 : 1)} of ${targetRounds}: Listen closely...`);
-    speakText("Listen");
-    
-    let step = 0;
-    const interval = setInterval(() => {
-      if (step >= newSeq.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsPlaying(false);
-          setActiveColor(null);
-          setStatusText("Now your turn!");
-          speakText("Your turn");
-          isLocked.current = false;
-          setUserStep(0);
-        }, 500);
-        return;
-      }
-      
-      const colId = newSeq[step];
-      const colObj = COLORS.find(c => c.id === colId);
-      setActiveColor(colId);
-      playSound(colObj.hz);
-      
-      setTimeout(() => {
-        setActiveColor(null);
-      }, 400);
-      
-      step++;
-    }, 1000);
+
+    setIsPlaying(false);
+    isLocked.current = false;
+    setStatusText("Your turn! Tap the colored chimes in order.");
+    speakText("Your turn");
   };
 
   const handleColorClick = (colorId, hz) => {
-    if (isLocked.current || isPlaying) return;
-    
+    if (isLocked.current || isPlaying || completed) return;
+
     playSound(hz);
     setActiveColor(colorId);
     setTimeout(() => setActiveColor(null), 300);
-    
+
     if (colorId === sequence[userStep]) {
-      // Correct step
       const nextStep = userStep + 1;
       setUserStep(nextStep);
-      
+
       if (nextStep === sequence.length) {
-        // Round complete
+        // Round completed successfully
         isLocked.current = true;
         if (round === targetRounds) {
+          // Game Completed
           handleGameComplete();
         } else {
-          setStatusText("Great job! Get ready for the next one...");
-          setTimeout(() => startRound(), 1500);
+          setStatusText("Wonderful! Next melody round...");
+          playChime('match');
+          setTimeout(() => {
+            startRound();
+          }, 1200);
         }
       }
     } else {
       // Mistake
-      isLocked.current = true;
       setMistakes(m => m + 1);
-      playChime('error');
+      isLocked.current = true;
       setStatusText("That's okay! Let's listen again.");
-      speakText("That's okay! Let's listen again.");
+      speakText("That's okay, let's listen again");
       setTimeout(() => {
-        startRound(sequence);
-      }, 2000);
+        playSequence(sequence);
+      }, 1200);
     }
   };
 
   const handleGameComplete = async () => {
-    setStatusText("Wonderful playing!");
-    speakText("Wonderful playing!");
-    
-    let accuracy = 100 - (mistakes * 10);
-    if (accuracy < 50) accuracy = 50;
-    
+    playChime('success');
+    const accuracy = Math.max(50, 100 - (mistakes * 10));
     const score = 95;
-    
+    const timeTaken = 30;
+
+    speakText("Wonderful memory! You repeated the entire melody!");
+
     if (patientId) {
       try {
         await api.post('/games/result', {
@@ -161,12 +152,14 @@ export default function PatternGame() {
           score,
           accuracy,
           difficulty,
-          timeTaken: round * 5 
+          timeTaken
         });
-      } catch(e) {}
+      } catch (e) {
+        console.error("Failed to save result", e);
+      }
     }
-    
-    setResultData({ accuracy, score });
+
+    setResultData({ accuracy, mistakes });
     setCompleted(true);
     setShowConfetti(true);
   };
@@ -183,32 +176,48 @@ export default function PatternGame() {
   };
 
   return (
-    <div className="min-h-screen bg-indigo-50 p-6 flex flex-col items-center">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
       {showConfetti && <ConfettiCanvas active={true} />}
-      <div className="w-full max-w-4xl flex justify-between items-center mb-8">
-        <Link to="/patient/games" className="text-xl px-6 py-3 bg-white text-indigo-700 rounded-xl shadow font-semibold hover:bg-indigo-50">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+        <Link 
+          to="/patient/games" 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+        >
           ← Back to Activities
         </Link>
-        <h1 className="text-4xl font-bold text-indigo-800">Melody Patterns</h1>
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl font-black text-white">Melody & Chime Patterns</h1>
+          <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mt-1">Round {round} of {targetRounds}</p>
+        </div>
+        <button 
+          onClick={resetGame} 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
+        >
+          🔄 Restart
+        </button>
       </div>
       
       {!completed ? (
-        <div className="flex flex-col items-center w-full max-w-3xl">
-          <div className="bg-white p-6 rounded-2xl shadow mb-10 text-center w-full">
-            <h2 className="text-3xl font-bold text-slate-700">{statusText}</h2>
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
+          {/* Status Telemetry Banner */}
+          <div className="bg-slate-900/90 border border-purple-900/40 p-5 rounded-2xl shadow-xl mb-8 text-center w-full">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-purple-200">{statusText}</h2>
           </div>
           
-          <div className="grid grid-cols-2 gap-8 w-full max-w-lg mb-12">
+          {/* Glowing 4-Pad Arcade Grid */}
+          <div className="grid grid-cols-2 gap-6 w-full max-w-md mb-8">
             {COLORS.map((c) => (
               <button
                 key={c.id}
                 onMouseDown={() => handleColorClick(c.id, c.hz)}
-                className={`aspect-square rounded-[3rem] transition-all duration-150 select-none ${
+                className={`aspect-square rounded-3xl transition-all duration-150 select-none ${
                   activeColor === c.id 
-                  ? c.active + ' scale-95 brightness-125 ring-8 ring-white/70 shadow-2xl animate-pulseMatch' 
-                  : c.color + ' shadow-xl hover:shadow-2xl hover:scale-103 hover:brightness-110 active:scale-95'
-                } ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-85 cursor-not-allowed' : 'cursor-pointer'}`}
-                aria-label={`Play ${c.id} tone`}
+                  ? c.active + ' scale-95 animate-pulseMatch' 
+                  : c.color + ' shadow-2xl hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:scale-103 active:scale-95 border-2 border-white/20'
+                } ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                aria-label={`Play ${c.name}`}
               />
             ))}
           </div>
@@ -216,30 +225,42 @@ export default function PatternGame() {
           {!hasStarted && (
             <button 
               onClick={() => startRound()}
-              className="py-5 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-3xl font-bold shadow-lg transition-transform hover:scale-105"
+              className="py-4 px-10 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-2xl text-2xl font-black shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all hover:scale-105 active:scale-95"
             >
-              ▶ Start Game
+              ▶ Start Melody Game
             </button>
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-2xl w-full text-center mt-10">
-          <div className="text-8xl mb-6">🎵</div>
-          <h2 className="text-5xl font-bold text-indigo-700 mb-6">Beautiful Melody!</h2>
-          <div className="text-3xl text-slate-600 mb-10">Accuracy: <span className="font-bold text-indigo-600">{resultData.accuracy}%</span></div>
-          
-          <div className="flex flex-col gap-4">
+        /* Completion Modal */
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.3)] text-center animate-fadeIn text-white">
+          <div className="text-7xl mb-4 animate-bounce">🎵</div>
+          <h2 className="text-3xl font-black text-cyan-300 mb-2">Melodic Master!</h2>
+          <p className="text-slate-300 font-medium mb-6">You repeated all musical sequences with great focus.</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Mistakes</span>
+              <p className="text-3xl font-black text-blue-400">{resultData?.mistakes}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
             <button 
-              onClick={resetGame}
-              className="py-5 px-8 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl text-3xl font-bold transition-colors w-full"
+              onClick={resetGame} 
+              className="flex-1 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
             >
               Play Again
             </button>
             <Link 
-              to="/patient/games"
-              className="py-5 px-8 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-3xl font-bold transition-colors w-full"
+              to="/patient/games" 
+              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
             >
-              Choose Another Game
+              All Games
             </Link>
           </div>
         </div>

@@ -4,7 +4,7 @@ import api from '../../../api/axios';
 import { playChime, speakText } from '../../../hooks/useVoice';
 import ConfettiCanvas from '../../../components/ConfettiCanvas';
 
-const ALL_ITEMS = ['🍎', '🌻', '⏰', '☕', '🐱', '🏡'];
+const ALL_ITEMS = ['🍎', '🌻', '⏰', '☕', '🐱', '🏡', '🍇', '🎈'];
 
 export default function MemoryGame() {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export default function MemoryGame() {
   useEffect(() => {
     const fetchPatientAndSetup = async () => {
       try {
+        const pRes = await api.get('/patients/me');
         const pat = pRes.data.patient || pRes.data;
         const pId = pat._id || pat.id;
         setPatientId(pId);
@@ -78,21 +79,24 @@ export default function MemoryGame() {
 
     if (newFlipped.length === 2) {
       isLocked.current = true;
-      setMoves(m => m + 1);
+      const currentMoves = moves + 1;
+      setMoves(currentMoves);
       
       const [firstIndex, secondIndex] = newFlipped;
       if (newCards[firstIndex].item === newCards[secondIndex].item) {
-        // Match
+        // Match found
         setTimeout(() => {
           playChime('success');
           const matchedCards = [...newCards];
           matchedCards[firstIndex].isMatched = true;
           matchedCards[secondIndex].isMatched = true;
           setCards(matchedCards);
+          
           setMatchedPairs(prev => {
             const newMatched = prev + 1;
             if (newMatched === newCards.length / 2) {
-              handleGameComplete(newMatched, moves + 1, diff => diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+              const totalPairs = newCards.length / 2;
+              handleGameComplete(newMatched, currentMoves, totalPairs);
             }
             return newMatched;
           });
@@ -108,17 +112,17 @@ export default function MemoryGame() {
           setCards(resetCards);
           setFlippedIndices([]);
           isLocked.current = false;
-        }, 1100);
+        }, 1000);
       }
     }
   };
 
-  const handleGameComplete = async (pairs, totalMoves, diffFunc) => {
-    const timeTaken = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
-    const accuracy = Math.max(50, Math.round((pairs / totalMoves) * 100));
+  const handleGameComplete = async (finalPairs, finalMoves, totalPairs) => {
+    const timeTaken = Math.max(1, Math.round((Date.now() - (startTime || Date.now())) / 1000));
+    const accuracy = Math.min(100, Math.max(50, Math.round((totalPairs / Math.max(totalPairs, finalMoves)) * 100)));
     const score = Math.round((accuracy * 10) / Math.max(1, timeTaken / 10));
 
-    const praises = ["Wonderful job!", "You did great!", "Fantastic memory!", "Beautiful work!"];
+    const praises = ["Wonderful job!", "Great focus!", "Fantastic memory!", "Beautiful work!"];
     const praise = praises[Math.floor(Math.random() * praises.length)];
     speakText(praise);
 
@@ -145,60 +149,99 @@ export default function MemoryGame() {
   const cols = difficulty === 'easy' ? 'grid-cols-2' : difficulty === 'medium' ? 'grid-cols-3' : 'grid-cols-4';
 
   return (
-    <div className="min-h-screen bg-teal-50 p-6 flex flex-col items-center">
+    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn pb-16">
       {showConfetti && <ConfettiCanvas active={true} />}
-      <div className="w-full max-w-4xl flex justify-between items-center mb-8">
-        <Link to="/patient/games" className="text-xl px-6 py-3 bg-white text-teal-700 rounded-xl shadow font-semibold hover:bg-teal-50">
+      
+      {/* Top Navigation & Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+        <Link 
+          to="/patient/games" 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+        >
           ← Back to Activities
         </Link>
-        <h1 className="text-4xl font-bold text-teal-800">Memory Match</h1>
-        <button onClick={() => setupGame(difficulty)} className="text-xl px-6 py-3 bg-teal-100 text-teal-800 rounded-xl shadow font-semibold hover:bg-teal-200">
-          🔄 Shuffle
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl font-black text-white">Memory Card Match</h1>
+          <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mt-1">Difficulty: {difficulty}</p>
+        </div>
+        <button 
+          onClick={() => setupGame(difficulty)} 
+          className="px-5 py-2.5 bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/80 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-1.5 active:scale-95"
+        >
+          🔄 Restart Shuffle
         </button>
       </div>
 
+      {/* Game Stats Telemetry Banner */}
+      <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
+          <span className="text-xs font-bold text-slate-400 uppercase">Moves</span>
+          <p className="text-2xl font-black text-white">{moves}</p>
+        </div>
+        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
+          <span className="text-xs font-bold text-slate-400 uppercase">Pairs</span>
+          <p className="text-2xl font-black text-emerald-400">{matchedPairs} / {cards.length / 2}</p>
+        </div>
+        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
+          <span className="text-xs font-bold text-slate-400 uppercase">Mode</span>
+          <p className="text-2xl font-black text-purple-400 uppercase">{difficulty}</p>
+        </div>
+      </div>
+
+      {/* Memory Card Grid */}
       {!completed ? (
-        <div className={`grid ${cols} gap-6 max-w-3xl w-full mx-auto mt-8`}>
+        <div className={`grid ${cols} gap-6 max-w-2xl w-full mx-auto mt-6`}>
           {cards.map((card, idx) => (
             <div 
               key={card.id}
               onClick={() => handleCardClick(idx)}
               className={`aspect-square rounded-3xl flex items-center justify-center text-7xl cursor-pointer transition-all duration-300 transform select-none ${
                 card.isMatched 
-                ? 'bg-emerald-50 border-4 border-emerald-500 shadow-lg scale-100 animate-pulseMatch'
+                ? 'bg-emerald-950/80 border-4 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-100 animate-pulseMatch'
                 : card.isFlipped 
-                ? 'bg-white border-4 border-blue-400 shadow-2xl scale-105 rotate-0'
-                : 'bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl border-2 border-emerald-400'
+                ? 'bg-slate-900 border-4 border-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.5)] scale-105'
+                : 'bg-gradient-to-br from-purple-900/80 via-slate-900 to-slate-950 hover:from-purple-800/80 hover:to-slate-900 border-2 border-purple-600/40 hover:border-purple-400 hover:scale-105 active:scale-95 shadow-xl'
               }`}
             >
               <span className={`transition-all duration-300 ${card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
                 {card.isFlipped || card.isMatched ? card.item : ''}
               </span>
               {!(card.isFlipped || card.isMatched) && (
-                <span className="absolute text-5xl text-white/90 drop-shadow-sm">✨</span>
+                <span className="text-4xl text-purple-400/80 drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">✨</span>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-2xl w-full text-center mt-10">
-          <div className="text-8xl mb-6">⭐</div>
-          <h2 className="text-5xl font-bold text-teal-700 mb-6">{resultData.praise}</h2>
-          <div className="text-3xl text-slate-600 mb-4">Accuracy: <span className="font-bold text-teal-600">{resultData.accuracy}%</span></div>
-          <div className="text-3xl text-slate-600 mb-10">Time: <span className="font-bold text-teal-600">{resultData.timeTaken} seconds</span></div>
-          
-          <div className="flex flex-col gap-4">
+        /* Completion Celebration Modal */
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.3)] text-center animate-fadeIn text-white">
+          <div className="text-7xl mb-4 animate-bounce">🌟</div>
+          <h2 className="text-3xl font-black text-purple-300 mb-2">{resultData?.praise || 'Activity Completed!'}</h2>
+          <p className="text-slate-300 font-medium mb-6">All pairs matched with great cognitive focus.</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Time Taken</span>
+              <p className="text-3xl font-black text-blue-400">{resultData?.timeTaken}s</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
             <button 
-              onClick={() => setupGame(difficulty)}
-              className="py-5 px-8 bg-teal-500 hover:bg-teal-600 text-white rounded-2xl text-3xl font-bold transition-colors w-full"
+              onClick={() => setupGame(difficulty)} 
+              className="flex-1 py-3.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
             >
               Play Again
             </button>
             <Link 
-              to="/patient/games"
-              className="py-5 px-8 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-3xl font-bold transition-colors w-full"
+              to="/patient/games" 
+              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
             >
-              Choose Another Game
+              All Games
             </Link>
           </div>
         </div>

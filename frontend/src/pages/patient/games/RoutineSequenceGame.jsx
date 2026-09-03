@@ -66,43 +66,52 @@ export default function RoutineSequenceGame() {
     setAvailableSteps([...steps].sort(() => Math.random() - 0.5));
     setChosenSteps([]);
     setCompleted(false);
+    setResultData(null);
     setShowConfetti(false);
+
+    speakText("Tap each step in the correct daily order.");
   };
 
-  const handleStepSelect = (step) => {
+  const handleSelectStep = (step) => {
+    if (completed) return;
     playChime('click');
-    speakText(step.text);
     
-    setAvailableSteps(prev => prev.filter(s => s.id !== step.id));
-    setChosenSteps(prev => {
-      const newChosen = [...prev, step];
-      if (newChosen.length === originalSteps.length) {
-        setTimeout(() => evaluateResult(newChosen), 1000);
+    const newChosen = [...chosenSteps, step];
+    const newAvailable = availableSteps.filter(s => s.id !== step.id);
+    
+    setChosenSteps(newChosen);
+    setAvailableSteps(newAvailable);
+
+    if (newAvailable.length === 0) {
+      // All selected - verify sequence
+      checkSequence(newChosen);
+    }
+  };
+
+  const handleResetCurrent = () => {
+    playChime('click');
+    setAvailableSteps([...originalSteps].sort(() => Math.random() - 0.5));
+    setChosenSteps([]);
+  };
+
+  const checkSequence = async (chosen) => {
+    let correctCount = 0;
+    for (let i = 0; i < originalSteps.length; i++) {
+      if (chosen[i]?.id === originalSteps[i]?.id) {
+        correctCount++;
       }
-      return newChosen;
-    });
-  };
+    }
 
-  const undoStep = (step) => {
-    playChime('click');
-    setChosenSteps(prev => prev.filter(s => s.id !== step.id));
-    setAvailableSteps(prev => [...prev, step]);
-  };
-
-  const evaluateResult = async (finalChosen) => {
-    let correctPositions = 0;
-    finalChosen.forEach((step, idx) => {
-      if (step.id === originalSteps[idx].id) correctPositions++;
-    });
-    
-    const accuracy = correctPositions === originalSteps.length ? 100 : Math.round((correctPositions / originalSteps.length) * 100);
+    const accuracy = Math.round((correctCount / originalSteps.length) * 100);
     const score = accuracy;
-    
+    const timeTaken = 20;
+
     if (accuracy === 100) {
       playChime('success');
-      speakText("Perfect order! Well done.");
+      speakText("Perfect daily routine sequence!");
     } else {
-      speakText("Good effort! You got some steps right.");
+      playChime('match');
+      speakText("Good effort putting the routine in order.");
     }
 
     if (patientId) {
@@ -113,105 +122,124 @@ export default function RoutineSequenceGame() {
           score,
           accuracy,
           difficulty,
-          timeTaken: 30
+          timeTaken
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to save result", e);
+      }
     }
-    
-    setResultData({ accuracy, correctPositions, total: originalSteps.length });
+
+    setResultData({ accuracy, score, perfect: accuracy === 100 });
     setCompleted(true);
-    setShowConfetti(accuracy >= 80);
+    setShowConfetti(true);
   };
 
-  const title = difficulty === 'hard' ? "Getting Ready for a Good Night's Sleep" : "How to make a warm cup of tea?";
-
   return (
-    <div className="min-h-screen bg-rose-50 p-6 flex flex-col items-center pb-20">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
       {showConfetti && <ConfettiCanvas active={true} />}
-      <div className="w-full max-w-5xl flex justify-between items-center mb-8">
-        <Link to="/patient/games" className="text-xl px-6 py-3 bg-white text-rose-700 rounded-xl shadow font-semibold hover:bg-rose-50">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+        <Link 
+          to="/patient/games" 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+        >
           ← Back to Activities
         </Link>
-        <button onClick={() => setupGame(difficulty)} className="text-xl px-6 py-3 bg-rose-100 text-rose-800 rounded-xl shadow font-semibold hover:bg-rose-200">
-          🔄 Restart
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl font-black text-white">Daily Steps in Order</h1>
+          <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mt-1">
+            {difficulty === 'hard' ? "Evening Sleep Preparation" : "Making a Warm Cup of Tea"}
+          </p>
+        </div>
+        <button 
+          onClick={handleResetCurrent} 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
+        >
+          🔄 Reset Sequence
         </button>
       </div>
 
-      <h1 className="text-4xl font-bold text-rose-800 mb-8 text-center bg-white py-4 px-8 rounded-full shadow-sm">
-        {title}
-      </h1>
-
       {!completed ? (
-        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10">
-          
-          {/* Available Steps */}
-          <div className="bg-white rounded-3xl shadow p-6 border-2 border-rose-100">
-            <h2 className="text-2xl font-bold text-slate-700 mb-6 text-center">Tap the next step:</h2>
-            <div className="flex flex-col gap-4">
-              {availableSteps.map(step => (
-                <button
-                  key={step.id}
-                  onClick={() => handleStepSelect(step)}
-                  className="w-full text-left p-5 bg-rose-50 hover:bg-rose-100 rounded-2xl flex items-center gap-4 transition-transform hover:-translate-y-1"
-                >
-                  <span className="text-5xl">{step.icon}</span>
-                  <span className="text-2xl font-semibold text-slate-800 leading-tight">{step.text}</span>
-                </button>
-              ))}
-              {availableSteps.length === 0 && (
-                <div className="text-2xl text-slate-400 text-center italic py-10">All steps selected!</div>
-              )}
-            </div>
+        <div className="space-y-8 max-w-2xl mx-auto">
+          {/* Chosen Steps (Target Zone) */}
+          <div className="bg-slate-900/90 border-2 border-dashed border-emerald-500/40 p-6 rounded-3xl shadow-xl">
+            <h3 className="text-sm font-extrabold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span>🎯</span>
+              <span>Your Chosen Step Order ({chosenSteps.length} of {originalSteps.length}):</span>
+            </h3>
+            
+            {chosenSteps.length === 0 ? (
+              <p className="text-slate-400 text-center py-6 font-medium text-lg">
+                Tap the steps below in the order you would do them!
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {chosenSteps.map((step, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-4 bg-emerald-950/80 border border-emerald-500/50 text-white rounded-2xl flex items-center gap-4 shadow-md animate-fadeIn"
+                  >
+                    <span className="w-9 h-9 rounded-full bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-sm">
+                      {idx + 1}
+                    </span>
+                    <span className="text-3xl">{step.icon}</span>
+                    <span className="text-lg font-bold">{step.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Chosen Steps */}
-          <div className="bg-rose-100 rounded-3xl shadow-inner p-6 border-2 border-rose-200">
-            <h2 className="text-2xl font-bold text-slate-700 mb-6 text-center">Your Chosen Order:</h2>
-            <div className="flex flex-col gap-4 min-h-[300px]">
-              {chosenSteps.map((step, idx) => (
-                <div
-                  key={step.id}
-                  onClick={() => undoStep(step)}
-                  className="w-full text-left p-5 bg-white rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-red-50 border-l-8 border-green-400 shadow-sm"
-                  title="Tap to remove"
-                >
-                  <span className="text-2xl font-bold text-slate-400 w-8">{idx + 1}.</span>
-                  <span className="text-5xl">{step.icon}</span>
-                  <span className="text-2xl font-semibold text-slate-800 leading-tight">{step.text}</span>
-                </div>
-              ))}
-              {chosenSteps.length === 0 && (
-                <div className="text-2xl text-rose-400 text-center italic py-10 opacity-70">
-                  Select items from the left to build the routine...
-                </div>
-              )}
-            </div>
+          {/* Available Steps (Source Zone) */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-extrabold text-purple-300 uppercase tracking-wider mb-2">
+              Available Steps (Tap in Order):
+            </h3>
+            {availableSteps.map((step) => (
+              <button
+                key={step.id}
+                onClick={() => handleSelectStep(step)}
+                className="w-full p-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-purple-500/50 shadow-lg hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] transition-all text-white flex items-center gap-4 text-left active:scale-98 select-none"
+              >
+                <span className="text-4xl p-2 rounded-xl bg-slate-950 border border-slate-800">{step.icon}</span>
+                <span className="text-xl font-bold">{step.text}</span>
+              </button>
+            ))}
           </div>
-
         </div>
       ) : (
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-2xl w-full text-center mt-4">
-          <div className="text-8xl mb-6">{resultData.accuracy === 100 ? '🌟' : '👍'}</div>
-          <h2 className="text-5xl font-bold text-rose-700 mb-6">
-            {resultData.accuracy === 100 ? 'Perfect Order!' : 'Good Try!'}
+        /* Completion Modal */
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.3)] text-center animate-fadeIn text-white">
+          <div className="text-7xl mb-4 animate-bounce">📝</div>
+          <h2 className="text-3xl font-black text-emerald-300 mb-2">
+            {resultData?.perfect ? "Flawless Sequence!" : "Activity Complete!"}
           </h2>
-          <div className="text-3xl text-slate-600 mb-4">
-            You got <span className="font-bold text-rose-600">{resultData.correctPositions}</span> out of {resultData.total} right.
+          <p className="text-slate-300 font-medium mb-6">Great procedural memory and daily task reasoning.</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Score</span>
+              <p className="text-3xl font-black text-blue-400">{resultData?.score}</p>
+            </div>
           </div>
-          <div className="text-3xl text-slate-600 mb-10">Accuracy: <span className="font-bold text-rose-600">{resultData.accuracy}%</span></div>
-          
-          <div className="flex flex-col gap-4">
+
+          <div className="flex gap-3">
             <button 
-              onClick={() => setupGame(difficulty)}
-              className="py-5 px-8 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-3xl font-bold transition-colors w-full"
+              onClick={() => setupGame(difficulty)} 
+              className="flex-1 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
             >
               Play Again
             </button>
             <Link 
-              to="/patient/games"
-              className="py-5 px-8 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-3xl font-bold transition-colors w-full"
+              to="/patient/games" 
+              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
             >
-              Choose Another Game
+              All Games
             </Link>
           </div>
         </div>

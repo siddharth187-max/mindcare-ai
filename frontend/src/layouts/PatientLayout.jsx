@@ -25,33 +25,46 @@ const PatientLayout = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${highContrast ? 'bg-black text-yellow-300' : 'bg-gradient-to-b from-[#F4F9F4] via-[#F9F7F1] to-[#FAF8F5] text-slate-800'} ${getFontSizeClass()} font-sans transition-colors duration-300`}>
-      {/* Top Header */}
-      <header className={`sticky top-0 z-40 shadow-md ${highContrast ? 'bg-gray-900 border-b-2 border-yellow-300' : 'bg-white/95 backdrop-blur-md border-b border-emerald-100'}`}>
+    <div className={`min-h-screen flex flex-col ${
+      highContrast 
+      ? 'bg-black text-yellow-300' 
+      : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
+    } ${getFontSizeClass()} font-sans transition-colors duration-300`}>
+      
+      {/* Top Obsidian Glass Navigation Header */}
+      <header className={`sticky top-0 z-40 shadow-xl ${
+        highContrast 
+        ? 'bg-black border-b-2 border-yellow-300' 
+        : 'bg-slate-900/90 backdrop-blur-md border-b border-purple-900/30'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-3.5">
             
-            {/* Brand */}
+            {/* Brand Logo & Telemetry Badge */}
             <div className="flex items-center justify-between w-full lg:w-auto gap-3">
               <Link to="/patient" className="flex items-center gap-2.5 group">
-                <span className="text-3xl p-1.5 rounded-xl bg-emerald-50 group-hover:scale-105 transition-transform">🌿</span>
+                <span className="text-3xl p-1.5 rounded-2xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform shadow-inner border border-purple-500/20">
+                  🌿
+                </span>
                 <div>
-                  <span className={`text-2xl sm:text-3xl font-black tracking-tight ${highContrast ? 'text-yellow-300' : 'text-emerald-800'}`}>
-                    MindCare <span className="text-emerald-500 font-extrabold text-xl">AI</span>
+                  <span className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                    highContrast ? 'text-yellow-300' : 'text-white'
+                  }`}>
+                    MindCare <span className="text-purple-400 font-extrabold text-xl">AI</span>
                   </span>
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:block">
-                    Patient Companion Portal
+                  <p className="text-[11px] font-bold text-purple-300/70 uppercase tracking-widest hidden sm:block">
+                    Cognitive Companion Portal
                   </p>
                 </div>
               </Link>
 
               {/* Status Badge */}
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
                 AI Adaptive Active
               </span>
 
-              <button onClick={handleLogout} className="lg:hidden text-sm font-bold underline text-slate-600">Logout</button>
+              <button onClick={handleLogout} className="lg:hidden text-sm font-bold text-slate-400 hover:text-white">Logout</button>
             </div>
 
             {/* Navigation Pills */}
@@ -59,10 +72,10 @@ const PatientLayout = () => {
               <NavLink 
                 to="/patient" 
                 end
-                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-lg font-bold border-2 transition-all active:scale-95 ${
+                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
                   isActive 
-                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-emerald-600 border-emerald-600 text-white shadow-md') 
-                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50')
+                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-purple-600 border-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)]') 
+                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-700 hover:text-white')
                 }`}
               >
                 🏠 Home
@@ -70,10 +83,10 @@ const PatientLayout = () => {
 
               <NavLink 
                 to="/patient/routine" 
-                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-lg font-bold border-2 transition-all active:scale-95 ${
+                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
                   isActive 
-                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-blue-600 border-blue-600 text-white shadow-md') 
-                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50')
+                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-blue-600 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)]') 
+                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-700 hover:text-white')
                 }`}
               >
                 📋 Routine
@@ -81,21 +94,21 @@ const PatientLayout = () => {
 
               <NavLink 
                 to="/patient/games" 
-                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-lg font-bold border-2 transition-all active:scale-95 ${
+                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
                   isActive 
-                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-purple-600 border-purple-600 text-white shadow-md') 
-                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50')
+                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-emerald-600 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]') 
+                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-700 hover:text-white')
                 }`}
               >
-                🧠 Games
+                🧠 Brain Games
               </NavLink>
 
               <NavLink 
                 to="/patient/results" 
-                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-lg font-bold border-2 transition-all active:scale-95 ${
+                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
                   isActive 
-                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-teal-600 border-teal-600 text-white shadow-md') 
-                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50')
+                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]') 
+                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-700 hover:text-white')
                 }`}
               >
                 📊 Progress
@@ -104,15 +117,19 @@ const PatientLayout = () => {
 
             {/* Accessibility & Quick Switcher */}
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <div className={`flex rounded-xl overflow-hidden border-2 ${highContrast ? 'border-yellow-300' : 'border-slate-200'}`}>
-                <button onClick={() => setFontSize('small')} className={`px-2.5 py-1.5 text-base font-bold ${fontSize === 'small' ? 'bg-slate-200 text-black' : 'bg-white'}`}>A-</button>
-                <button onClick={() => setFontSize('normal')} className={`px-2.5 py-1.5 text-lg font-bold border-l border-r ${highContrast ? 'border-yellow-300' : 'border-slate-200'} ${fontSize === 'normal' ? 'bg-slate-200 text-black' : 'bg-white'}`}>A</button>
-                <button onClick={() => setFontSize('large')} className={`px-2.5 py-1.5 text-xl font-bold ${fontSize === 'large' ? 'bg-slate-200 text-black' : 'bg-white'}`}>A+</button>
+              <div className={`flex rounded-xl overflow-hidden border ${highContrast ? 'border-yellow-300' : 'border-slate-700 bg-slate-800'}`}>
+                <button onClick={() => setFontSize('small')} className={`px-2.5 py-1.5 text-sm font-bold ${fontSize === 'small' ? 'bg-purple-600 text-white' : 'text-slate-300'}`}>A-</button>
+                <button onClick={() => setFontSize('normal')} className={`px-2.5 py-1.5 text-base font-bold border-l border-r border-slate-700 ${fontSize === 'normal' ? 'bg-purple-600 text-white' : 'text-slate-300'}`}>A</button>
+                <button onClick={() => setFontSize('large')} className={`px-2.5 py-1.5 text-lg font-bold ${fontSize === 'large' ? 'bg-purple-600 text-white' : 'text-slate-300'}`}>A+</button>
               </div>
               
               <button 
                 onClick={() => setHighContrast(!highContrast)} 
-                className={`min-h-11 px-3 py-1.5 rounded-xl font-bold border-2 text-sm ${highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-slate-800 text-white border-slate-800'}`}
+                className={`min-h-11 px-3 py-1.5 rounded-xl font-bold border text-xs sm:text-sm transition-all ${
+                  highContrast 
+                  ? 'bg-yellow-300 text-black border-yellow-300' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+                }`}
                 title="Toggle High Contrast"
               >
                 ◑ Contrast
@@ -120,7 +137,11 @@ const PatientLayout = () => {
 
               <button 
                 onClick={() => setSoundEnabled(!soundEnabled)} 
-                className={`min-h-11 px-3 py-1.5 rounded-xl text-xl border-2 ${soundEnabled ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-100'} ${highContrast ? 'border-yellow-300 text-yellow-300 bg-gray-800' : ''}`}
+                className={`min-h-11 px-3 py-1.5 rounded-xl text-lg border transition-all ${
+                  soundEnabled 
+                  ? 'border-purple-500/40 bg-purple-950/60 text-purple-300 shadow-sm' 
+                  : 'border-slate-700 bg-slate-800 text-slate-400'
+                }`}
                 title="Toggle Sound"
               >
                 {soundEnabled ? '🔊' : '🔇'}
@@ -128,14 +149,14 @@ const PatientLayout = () => {
 
               <button 
                 onClick={() => setShowEmergency(true)}
-                className="min-h-11 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-md animate-pulse border border-red-700 flex items-center gap-1"
+                className="min-h-11 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg animate-pulse border border-red-500 flex items-center gap-1.5"
               >
                 🚨 Call Help
               </button>
 
               <Link 
                 to="/caregiver" 
-                className="min-h-11 px-3.5 py-1.5 rounded-xl font-bold bg-blue-700 hover:bg-blue-800 text-white text-sm flex items-center gap-1 shadow-sm"
+                className="min-h-11 px-3.5 py-1.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm flex items-center gap-1 shadow-md transition-all active:scale-95"
                 title="Switch to Caregiver Portal"
               >
                 🩺 Caregiver View
@@ -145,41 +166,41 @@ const PatientLayout = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Patient View */}
       <main className="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
         <Outlet context={{ soundEnabled, highContrast }} />
       </main>
 
       {/* Emergency Reassurance Modal */}
       {showEmergency && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className={`max-w-2xl w-full rounded-3xl p-8 sm:p-10 text-center shadow-2xl ${highContrast ? 'bg-black border-4 border-yellow-300' : 'bg-white border border-red-100'}`}>
-            <div className="text-6xl mb-4">🏡</div>
-            <h2 className={`text-3xl sm:text-4xl font-extrabold mb-3 ${highContrast ? 'text-yellow-300' : 'text-red-700'}`}>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="max-w-2xl w-full rounded-3xl p-8 sm:p-10 text-center shadow-2xl bg-slate-900 border-2 border-red-500/40 text-white">
+            <div className="text-6xl mb-4 animate-bounce">🏡</div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-3 text-red-400">
               You Are Safe at Home
             </h2>
-            <p className="text-xl sm:text-2xl mb-6 leading-relaxed text-slate-700 font-medium">
-              Take a slow, deep breath. Your door is locked, your home is warm, and help is always right here.
+            <p className="text-xl sm:text-2xl mb-6 leading-relaxed text-slate-300 font-medium">
+              Take a slow, deep breath. Your home is warm, your door is secure, and your caregivers are monitoring you.
             </p>
 
-            <div className="bg-slate-50 p-5 rounded-2xl mb-6 text-left border border-slate-200">
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">📍 Home Address Anchor</div>
-              <div className="text-xl font-bold text-slate-800">442 Maplewood Drive, Apt 3B</div>
-              <div className="text-sm text-slate-600 mt-1">Caregiver on duty: Sarah Jenkins • (555) 382-9012</div>
+            <div className="bg-slate-950 p-5 rounded-2xl mb-6 text-left border border-slate-800">
+              <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">📍 Home Anchor Address</div>
+              <div className="text-xl font-bold text-slate-100">442 Maplewood Drive, Apt 3B</div>
+              <div className="text-sm text-slate-400 mt-1">Caregiver on duty: Sarah Jenkins • (555) 382-9012</div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <a 
                 href="tel:911"
-                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
                 🚨 Call Emergency (911)
               </a>
               <button 
                 onClick={() => setShowEmergency(false)}
-                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
+                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-purple-600 hover:bg-purple-700 text-white shadow-lg active:scale-95 transition-all"
               >
-                ✓ I Feel Safe Now (Close)
+                ✓ I Feel Safe (Close)
               </button>
             </div>
           </div>

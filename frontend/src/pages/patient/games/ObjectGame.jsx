@@ -27,6 +27,7 @@ export default function ObjectGame() {
   useEffect(() => {
     const fetchPatientAndSetup = async () => {
       try {
+        const pRes = await api.get('/patients/me');
         const pat = pRes.data.patient || pRes.data;
         const pId = pat._id || pat.id;
         setPatientId(pId);
@@ -51,150 +52,181 @@ export default function ObjectGame() {
     if (diff === 'medium') qCount = 4;
     if (diff === 'hard') qCount = 5;
     
-    // Shuffle and pick
     const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, qCount);
-    // Shuffle options within each question
     const prepped = shuffled.map(q => ({
       ...q,
       options: [...q.options].sort(() => Math.random() - 0.5)
     }));
-    
+
     setQuestions(prepped);
     setCurrentIndex(0);
     setFirstTryCorrect(0);
     setHasTriedCurrent(false);
     setCompleted(false);
+    setResultData(null);
     setShowConfetti(false);
     setFadedOptions([]);
-    
+
     if (prepped.length > 0) {
-      setTimeout(() => speakText(prepped[0].text), 1000);
+      speakText(prepped[0].text);
     }
   };
 
-  const handleOptionClick = (option, idx) => {
-    if (fadedOptions.includes(idx)) return;
-    
-    if (option.correct) {
+  const handleOptionClick = (opt, index) => {
+    if (fadedOptions.includes(index) || completed) return;
+
+    if (opt.correct) {
       playChime('success');
-      speakText('Wonderful!');
       if (!hasTriedCurrent) {
-        setFirstTryCorrect(prev => prev + 1);
+        setFirstTryCorrect(c => c + 1);
       }
-      
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          const nextIndex = currentIndex + 1;
+
+      speakText("Wonderful! That is correct.");
+
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < questions.length) {
+        setTimeout(() => {
           setCurrentIndex(nextIndex);
           setHasTriedCurrent(false);
           setFadedOptions([]);
           speakText(questions[nextIndex].text);
-        } else {
-          handleGameComplete();
-        }
-      }, 1500);
+        }, 1200);
+      } else {
+        setTimeout(() => {
+          handleGameComplete(firstTryCorrect + (!hasTriedCurrent ? 1 : 0), questions.length);
+        }, 1000);
+      }
     } else {
       playChime('click');
-      speakText('Good try! Let us try the other option.');
       setHasTriedCurrent(true);
-      setFadedOptions(prev => [...prev, idx]);
+      setFadedOptions(prev => [...prev, index]);
+      speakText("Good try! Let us try another choice.");
     }
   };
 
-  const handleGameComplete = async () => {
-    const accuracy = Math.round((firstTryCorrect / questions.length) * 100) || 50;
-    
+  const handleGameComplete = async (finalFirstTries, totalQ) => {
+    const accuracy = Math.round((finalFirstTries / totalQ) * 100);
+    const score = accuracy;
+    const timeTaken = 25;
+
     if (patientId) {
       try {
         await api.post('/games/result', {
           patientId,
           gameType: 'objectRecognition',
-          score: accuracy,
+          score,
           accuracy,
           difficulty,
-          timeTaken: questions.length * 10
+          timeTaken
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to save result", e);
+      }
     }
-    
-    setResultData({ accuracy });
+
+    setResultData({ accuracy, score });
     setCompleted(true);
     setShowConfetti(true);
-    speakText("You finished all questions beautifully!");
   };
-
-  const readQuestion = () => {
-    if (questions[currentIndex]) {
-      speakText(questions[currentIndex].text);
-    }
-  };
-
-  if (questions.length === 0) return <div className="p-10 text-2xl">Loading...</div>;
 
   const currentQ = questions[currentIndex];
 
   return (
-    <div className="min-h-screen bg-yellow-50 p-6 flex flex-col items-center">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
       {showConfetti && <ConfettiCanvas active={true} />}
-      <div className="w-full max-w-4xl flex justify-between items-center mb-8">
-        <Link to="/patient/games" className="text-xl px-6 py-3 bg-white text-yellow-700 rounded-xl shadow font-semibold hover:bg-yellow-50">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+        <Link 
+          to="/patient/games" 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+        >
           ← Back to Activities
         </Link>
-        <h1 className="text-4xl font-bold text-yellow-800">Everyday Objects</h1>
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl font-black text-white">Everyday Object Quiz</h1>
+          <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mt-1">Question {currentIndex + 1} of {questions.length}</p>
+        </div>
+        <button 
+          onClick={() => setupGame(difficulty)} 
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
+        >
+          🔄 Restart
+        </button>
       </div>
-      
-      {!completed ? (
-        <div className="w-full max-w-4xl flex flex-col items-center">
-          <div className="bg-white p-8 rounded-3xl shadow-lg w-full text-center mb-10 relative">
-            <h2 className="text-4xl font-bold text-slate-800 leading-tight">{currentQ.text}</h2>
+
+      {!completed && currentQ ? (
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto space-y-6">
+          {/* Question Card with Sound Button */}
+          <div className="bg-slate-900/90 border border-pink-900/40 p-8 rounded-3xl shadow-xl text-center w-full relative">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 leading-relaxed">
+              {currentQ.text}
+            </h2>
             <button 
-              onClick={readQuestion}
-              className="mt-6 px-6 py-3 bg-blue-100 text-blue-700 rounded-full font-bold text-xl inline-flex items-center gap-2 hover:bg-blue-200 transition-colors"
+              onClick={() => speakText(currentQ.text)} 
+              className="px-6 py-2.5 bg-pink-950/80 hover:bg-pink-900 text-pink-300 border border-pink-700/80 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-2 mx-auto active:scale-95 shadow-sm"
             >
-              🔊 Hear Question
+              <span>🔊</span>
+              <span>Read Question Aloud</span>
             </button>
-            <div className="absolute top-4 right-6 text-xl font-bold text-slate-400">
-              {currentIndex + 1} / {questions.length}
-            </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-            {currentQ.options.map((opt, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleOptionClick(opt, idx)}
-                className={`flex flex-col items-center p-8 bg-white rounded-3xl shadow-md transition-all duration-300
-                  ${fadedOptions.includes(idx) ? 'opacity-30 scale-95 cursor-not-allowed' : 'hover:-translate-y-2 hover:shadow-xl hover:border-yellow-300 border-4 border-transparent'}
-                `}
-              >
-                <div className="text-8xl mb-6">{opt.icon}</div>
-                <div className="text-3xl font-bold text-slate-700">{opt.label}</div>
-              </button>
-            ))}
+
+          {/* Choice Option Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+            {currentQ.options.map((opt, i) => {
+              const isFaded = fadedOptions.includes(i);
+              return (
+                <button
+                  key={i}
+                  disabled={isFaded}
+                  onClick={() => handleOptionClick(opt, i)}
+                  className={`p-6 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-200 border-2 select-none ${
+                    isFaded 
+                    ? 'bg-slate-950/40 border-slate-800 text-slate-600 opacity-40 cursor-not-allowed scale-95' 
+                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 hover:border-pink-500/50 hover:shadow-[0_0_25px_rgba(236,72,153,0.3)] hover:-translate-y-1 active:scale-95 text-white'
+                  }`}
+                >
+                  <span className="text-6xl mb-3">{opt.icon}</span>
+                  <span className="text-xl font-bold">{opt.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-2xl w-full text-center mt-10">
-          <div className="text-8xl mb-6">🏆</div>
-          <h2 className="text-5xl font-bold text-yellow-700 mb-6">Fantastic Job!</h2>
-          <div className="text-3xl text-slate-600 mb-10">Accuracy: <span className="font-bold text-yellow-600">{resultData.accuracy}%</span></div>
-          
-          <div className="flex flex-col gap-4">
+      ) : completed ? (
+        /* Completion Modal */
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-pink-500/50 shadow-[0_0_40px_rgba(236,72,153,0.3)] text-center animate-fadeIn text-white">
+          <div className="text-7xl mb-4 animate-bounce">🔍</div>
+          <h2 className="text-3xl font-black text-pink-300 mb-2">Quiz Completed!</h2>
+          <p className="text-slate-300 font-medium mb-6">Fantastic visual recognition and everyday memory.</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-xs text-slate-400 uppercase font-bold">Score</span>
+              <p className="text-3xl font-black text-pink-400">{resultData?.score}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
             <button 
-              onClick={() => setupGame(difficulty)}
-              className="py-5 px-8 bg-yellow-500 hover:bg-yellow-600 text-white rounded-2xl text-3xl font-bold transition-colors w-full"
+              onClick={() => setupGame(difficulty)} 
+              className="flex-1 py-3.5 px-4 bg-pink-600 hover:bg-pink-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
             >
               Play Again
             </button>
             <Link 
-              to="/patient/games"
-              className="py-5 px-8 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-3xl font-bold transition-colors w-full"
+              to="/patient/games" 
+              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
             >
-              Choose Another Game
+              All Games
             </Link>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
