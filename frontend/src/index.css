@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* MindCare Dementia-Friendly Custom Styles */
+
+/* Calming, elderly-friendly color palette */
+:root {
+  --mc-cream: #F8F6F0;
+  --mc-sage: #2E7D32;
+  --mc-sage-light: #E8F5E9;
+  --mc-blue: #1565C0;
+  --mc-blue-light: #E3F2FD;
+  --mc-coral: #E65100;
+  --mc-coral-light: #FFF3E0;
+  --mc-danger: #C62828;
+  --mc-danger-light: #FFEBEE;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--mc-cream);
+  color: #1F2937;
+}
+
+/* Ensure all interactive elements have good focus visibility */
+*:focus-visible {
+  outline: 4px solid var(--mc-blue);
+  outline-offset: 3px;
+}
+
+/* Gentle animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulseMatch {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.animate-pulseMatch {
+  animation: pulseMatch 0.4s ease;
+}
+
+/* Confetti canvas */
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* High contrast mode overrides */
+body.high-contrast {
+  background-color: #0A0A0A;
+  color: #FFFFFF;
+}
+
+body.high-contrast .bg-white {
+  background-color: #181818 !important;
+}
+
+body.high-contrast .border-gray-200 {
+  border-color: #FFFFFF !important;
+}
+
+/* Scrollbar styling for elderly */
+::-webkit-scrollbar {
+  width: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a8a8a8;
+  border-radius: 8px;
+  border: 3px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
