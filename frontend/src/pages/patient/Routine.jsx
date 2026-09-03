@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useVoice } from '../../hooks/useVoice';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -12,7 +12,7 @@ const Routine = () => {
   const [filter, setFilter] = useState('All');
   const [error, setError] = useState('');
   
-  const { soundEnabled, highContrast } = useOutletContext();
+  const { soundEnabled, highContrast } = useOutletContext() || {};
   const { speak } = useVoice();
   const confettiRef = useRef();
 
@@ -20,9 +20,11 @@ const Routine = () => {
     const init = async () => {
       try {
         const pRes = await api.get('/patients/me');
-        if (pRes.data && pRes.data._id) {
-          setPatientId(pRes.data._id);
-          fetchRoutines(pRes.data._id);
+        const pat = pRes.data.patient || pRes.data;
+        if (pat && (pat._id || pat.id)) {
+          const pId = pat._id || pat.id;
+          setPatientId(pId);
+          fetchRoutines(pId);
         } else {
           setError("Patient profile not found. Please ask your caregiver to set it up.");
           setLoading(false);
@@ -57,7 +59,7 @@ const Routine = () => {
         confettiRef.current.triggerConfetti();
       }
       if (soundEnabled) {
-        speak("Great job completing " + routine.title + "!");
+        speak("Wonderful job completing " + routine.title + "!");
       }
 
       setRoutines(prev => 
@@ -65,7 +67,6 @@ const Routine = () => {
       );
     } catch (err) {
       console.error("Error completing routine:", err);
-      alert("Something went wrong. Please try again.");
     }
   };
 
@@ -99,56 +100,61 @@ const Routine = () => {
     });
   };
 
-  if (loading) return <LoadingSpinner message="Loading your routine..." />;
+  if (loading) return <LoadingSpinner message="Loading your daily checklist..." />;
 
-  if (error) {
-    return (
-      <div className="text-center p-8 bg-white rounded-3xl shadow-lg mt-8">
-        <h2 className="text-3xl font-bold text-red-600 mb-4">Notice</h2>
-        <p className="text-2xl">{error}</p>
-      </div>
-    );
-  }
-
-  const completedCount = routines.filter(r => r.isCompleted).length;
+  const completedCount = routines.filter(r => r.completed).length;
   const totalCount = routines.length;
   const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
-  const textStyle = highContrast ? 'text-yellow-300' : 'text-gray-900';
-  const cardStyle = highContrast ? 'bg-black border-2 border-yellow-300 text-yellow-300' : 'bg-white shadow-xl';
+  const cardStyle = highContrast 
+    ? 'bg-black border-2 border-cyan-400 text-white' 
+    : 'bg-slate-900/90 border border-slate-800 text-white shadow-xl';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
       <ConfettiCanvas ref={confettiRef} />
       
-      <div className="text-center mb-8">
-        <h1 className={`text-5xl font-bold mb-6 ${textStyle}`}>📋 Your Daily Routine</h1>
-        
-        {/* Progress Bar */}
-        <div className={`p-6 rounded-3xl ${highContrast ? 'bg-gray-900 border border-yellow-300' : 'bg-white shadow-md'}`}>
-          <div className="flex justify-between items-center mb-4 text-2xl font-bold">
-            <span>Progress Today</span>
-            <span>{completedCount} of {totalCount} Done ({progressPercent}%)</span>
+      {/* Top Banner & Progress Meter */}
+      <div className="text-center space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-purple-900/30 pb-4">
+          <Link 
+            to="/patient" 
+            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+          >
+            ← Return Home
+          </Link>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white">📋 Today's Daily Routine</h1>
+            <p className="text-sm font-bold text-purple-300 mt-0.5">Stay refreshed and on track throughout your day</p>
           </div>
-          <div className="w-full h-8 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-28 hidden sm:block"></div>
+        </div>
+        
+        {/* Glowing Progress Card */}
+        <div className={`p-6 sm:p-8 rounded-3xl ${cardStyle} shadow-[0_0_25px_rgba(16,185,129,0.15)] relative overflow-hidden`}>
+          <div className="flex justify-between items-center mb-3 text-lg sm:text-2xl font-black">
+            <span className="text-purple-200">Daily Completion Goal</span>
+            <span className="text-emerald-400 font-mono">{completedCount} of {totalCount} Done ({progressPercent}%)</span>
+          </div>
+          <div className="w-full h-6 sm:h-7 bg-slate-950 rounded-full overflow-hidden p-1 border border-slate-800">
             <div 
-              className={`h-full transition-all duration-1000 ${highContrast ? 'bg-yellow-400' : 'bg-[#2E7D32]'}`}
-              style={{ width: `${progressPercent}%` }}
+              className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]"
+              style={{ width: `${Math.max(5, progressPercent)}%` }}
             ></div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap justify-center gap-4 mb-8">
-        {['All', 'Morning', 'Afternoon', 'Evening'].map(f => (
+      {/* Time Filter Pills */}
+      <div className="flex justify-center gap-2 sm:gap-3 flex-wrap">
+        {['All', 'Morning', 'Afternoon', 'Evening'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`min-h-14 px-8 py-3 rounded-full text-2xl font-bold border-4 transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md ${
+            className={`min-h-12 px-6 sm:px-8 py-2.5 rounded-2xl text-base sm:text-lg font-black border transition-all active:scale-95 shadow-md ${
               filter === f 
-              ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-emerald-700 text-white border-emerald-700 shadow-md') 
-              : (highContrast ? 'bg-black text-yellow-300 border-yellow-300' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50')
+              ? 'bg-purple-600 border-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)]' 
+              : 'bg-slate-900/80 border-slate-700/80 text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
             {f}
@@ -156,11 +162,13 @@ const Routine = () => {
         ))}
       </div>
 
-      {/* Routine List */}
-      <div className="space-y-6">
+      {/* Routine Item Cards */}
+      <div className="space-y-4">
         {getFilteredRoutines().length === 0 ? (
           <div className={`text-center p-12 rounded-3xl ${cardStyle}`}>
-            <p className="text-3xl">No activities scheduled for this time.</p>
+            <div className="text-6xl mb-4">☀️</div>
+            <p className="text-2xl font-extrabold text-slate-300">No activities scheduled for this time.</p>
+            <p className="text-base text-slate-500 mt-1">Take some time to rest and relax.</p>
           </div>
         ) : (
           getFilteredRoutines().map(routine => {
@@ -170,37 +178,34 @@ const Routine = () => {
             return (
               <div 
                 key={routine._id} 
-                className={`flex flex-col sm:flex-row items-center justify-between p-6 rounded-3xl transition-all duration-200 card-interactive ${
+                className={`flex flex-col sm:flex-row items-center justify-between p-6 rounded-3xl transition-all duration-200 border ${
                   isDone 
-                  ? (highContrast ? 'bg-gray-900 border-2 border-yellow-300 opacity-75' : 'bg-emerald-50/80 border-2 border-emerald-200 shadow-sm') 
-                  : cardStyle
+                  ? 'bg-emerald-950/40 border-emerald-500/30 text-slate-300' 
+                  : 'bg-slate-900/90 border-slate-800 hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] text-white'
                 }`}
               >
-                <div className="flex items-center gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
-                  <div className={`text-6xl w-24 h-24 flex items-center justify-center rounded-2xl shadow-inner transition-transform hover:scale-105 ${
-                    highContrast ? 'bg-black border border-yellow-300' : 'bg-slate-100'
-                  }`}>
+                <div className="flex items-center gap-5 w-full sm:w-auto">
+                  <div className="text-5xl w-20 h-20 flex items-center justify-center rounded-2xl bg-slate-950 border border-slate-800 shadow-inner flex-shrink-0">
                     {getCategoryIcon(routine.category)}
                   </div>
                   <div>
-                    <span className={`inline-block px-4 py-1 rounded-full text-xl font-bold mb-2 shadow-xs ${
-                      highContrast ? 'bg-yellow-300 text-black' : 'bg-blue-100 text-blue-800 border border-blue-200'
-                    }`}>
-                      {timeStr}
+                    <span className="inline-block px-3.5 py-1 rounded-full text-xs font-black mb-1 bg-blue-950 text-blue-300 border border-blue-800 shadow-sm">
+                      ⏰ {timeStr}
                     </span>
-                    <h3 className={`text-3xl font-extrabold ${isDone && !highContrast ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                    <h3 className={`text-2xl sm:text-3xl font-extrabold ${isDone ? 'line-through text-slate-400' : 'text-white'}`}>
                       {routine.title}
                     </h3>
+                    {routine.description && (
+                      <p className="text-sm font-medium text-slate-400 mt-0.5">{routine.description}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex gap-4 w-full sm:w-auto mt-4 sm:mt-0">
+                <div className="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0 justify-end">
                   {soundEnabled && (
                     <button 
                       onClick={() => speak(`At ${timeStr}, ${routine.title}`)}
-                      className={`min-h-16 w-16 flex items-center justify-center rounded-2xl text-3xl border-2 transition-all active:scale-90 hover:scale-105 shadow-sm hover:shadow-md ${
-                        highContrast ? 'border-yellow-300' : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'
-                      }`}
+                      className="min-h-14 w-14 flex items-center justify-center rounded-2xl text-2xl border bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 transition-all active:scale-95 shadow-sm"
                       title="Read aloud"
                     >
                       🔊
@@ -210,10 +215,10 @@ const Routine = () => {
                   <button
                     onClick={() => handleComplete(routine)}
                     disabled={isDone}
-                    className={`flex-grow sm:flex-grow-0 min-h-16 px-8 py-4 rounded-2xl text-2xl font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 ${
+                    className={`min-h-14 px-7 py-3 rounded-2xl text-xl font-extrabold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 ${
                       isDone
-                      ? 'bg-emerald-600 text-white cursor-default shadow-sm'
-                      : (highContrast ? 'bg-yellow-300 text-black border-2 border-yellow-300' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg text-white')
+                      ? 'bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 cursor-default'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)]'
                     }`}
                   >
                     {isDone ? (
