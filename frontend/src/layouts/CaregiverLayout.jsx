@@ -1,9 +1,10 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
 const CaregiverLayout = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -12,51 +13,64 @@ const CaregiverLayout = () => {
   };
 
   const navItems = [
-    { name: '📊 Dashboard', path: '/caregiver', end: true },
-    { name: '📈 Progress', path: '/caregiver/progress' },
-    { name: '🏆 Results', path: '/caregiver/results' },
-    { name: '⏰ Reminders', path: '/caregiver/reminders' },
-    { name: '🔔 Alerts', path: '/caregiver/alerts' },
+    { name: '📊 Telemetry Dashboard', path: '/caregiver', end: true },
+    { name: '📈 Cognitive Trends', path: '/caregiver/progress' },
+    { name: '🏆 Activity History', path: '/caregiver/results' },
+    { name: '⏰ Care Reminders', path: '/caregiver/reminders' },
+    { name: '🔔 Safety Alerts', path: '/caregiver/alerts' },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Top Clinical Monitoring Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            
+            {/* Brand & Portal Title */}
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-blue-900">🌿 MindCare</h1>
-              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Caregiver Portal
+              <Link to="/caregiver" className="flex items-center gap-2">
+                <span className="text-2xl p-1.5 rounded-lg bg-blue-50 text-blue-700">🌿</span>
+                <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  MindCare <span className="text-blue-600">Pro</span>
+                </span>
+              </Link>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                Caregiver Monitoring Console
               </span>
             </div>
+
+            {/* Quick Actions */}
             <div className="flex items-center gap-3">
               <NavLink
                 to="/patient"
-                className="px-4 py-2 text-sm font-bold text-white bg-green-700 hover:bg-green-800 rounded-lg transition-colors flex items-center gap-1.5"
+                className="px-3.5 py-1.5 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
               >
-                👤 Switch to Patient View
+                <span>👤</span>
+                <span>Switch to Patient View</span>
               </NavLink>
+              
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                className="px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
               >
                 Logout
               </button>
             </div>
           </div>
           
-          <nav className="flex space-x-6 overflow-x-auto py-3 no-scrollbar border-t border-gray-100">
+          {/* Navigation Bar */}
+          <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto py-2 no-scrollbar border-t border-slate-100">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 end={item.end}
                 className={({ isActive }) =>
-                  `whitespace-nowrap pb-2 px-1 text-sm font-medium transition-colors border-b-2 ${
+                  `whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
                     isActive
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`
                 }
               >
@@ -67,9 +81,12 @@ const CaregiverLayout = () => {
         </div>
       </header>
 
+      {/* Main Caregiver View */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+
+      <MedicalDisclaimer />
     </div>
   );
 };
