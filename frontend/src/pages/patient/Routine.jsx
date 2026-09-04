@@ -10,6 +10,7 @@ const Routine = () => {
   const [reminders, setReminders] = useState([]);
   const [patientId, setPatientId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
   const [filter, setFilter] = useState('All');
   const [error, setError] = useState('');
   
@@ -68,7 +69,18 @@ const Routine = () => {
   }, []);
 
   const handleComplete = async (routine) => {
-    if (routine.completed) return;
+    if (routine.completed) {
+      // Toggle back to pending (undo)
+      try {
+        await api.patch(`/routines/${routine._id}/uncomplete`);
+        setRoutines(prev => 
+          prev.map(r => r._id === routine._id ? { ...r, completed: false } : r)
+        );
+      } catch (err) {
+        console.error("Error uncompleting routine:", err);
+      }
+      return;
+    }
     
     try {
       await api.patch(`/routines/${routine._id}/complete`);
@@ -85,6 +97,22 @@ const Routine = () => {
       );
     } catch (err) {
       console.error("Error completing routine:", err);
+    }
+  };
+
+  const handleResetAll = async () => {
+    if (!window.confirm("Start fresh and reset all activities to do them again?")) return;
+    setResetting(true);
+    try {
+      await api.post(`/routines/reset/${patientId}`);
+      await fetchRoutines(patientId);
+      if (soundEnabled) {
+        speak("Daily activities have been reset. Have a wonderful day!");
+      }
+    } catch (err) {
+      console.error("Error resetting routines:", err);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -160,7 +188,16 @@ const Routine = () => {
             <h1 className="text-3xl sm:text-4xl font-black text-white">📋 Today's Daily Routine</h1>
             <p className="text-sm font-bold text-purple-300 mt-0.5">Stay refreshed and on track throughout your day</p>
           </div>
-          <div className="w-28 hidden sm:block"></div>
+          
+          <button
+            onClick={handleResetAll}
+            disabled={resetting}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-xs sm:text-sm transition-all flex items-center gap-1.5 active:scale-95"
+            title="Reset all tasks so you can check them off again"
+          >
+            <span>🔄</span>
+            <span>{resetting ? 'Resetting...' : 'Reset Checklist'}</span>
+          </button>
         </div>
         
         {/* Glowing Progress Card */}
@@ -175,6 +212,18 @@ const Routine = () => {
               style={{ width: `${Math.max(5, progressPercent)}%` }}
             ></div>
           </div>
+
+          {progressPercent === 100 && (
+            <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
+              <span className="text-emerald-400 font-bold text-sm">🎉 You completed all of today's activities!</span>
+              <button
+                onClick={handleResetAll}
+                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-black px-3 py-1.5 rounded-xl transition shadow-sm active:scale-95"
+              >
+                🔄 Reset for New Day
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -186,7 +235,7 @@ const Routine = () => {
               <span className="text-3xl animate-bounce">🔔</span>
               <div>
                 <h3 className="text-2xl font-extrabold text-amber-300">Caregiver Reminders</h3>
-                <p className="text-xs text-amber-200/80 font-bold">Important scheduled alerts</p>
+                <p className="text-xs text-amber-200/80 font-bold">Important scheduled alerts in your time zone</p>
               </div>
             </div>
             <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-black">
@@ -197,7 +246,7 @@ const Routine = () => {
           <div className="space-y-3">
             {reminders.map(rem => {
               const d = new Date(rem.scheduledTime);
-              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
               return (
                 <div 
@@ -308,15 +357,15 @@ const Routine = () => {
                   
                   <button
                     onClick={() => handleComplete(routine)}
-                    disabled={isDone}
                     className={`min-h-14 px-7 py-3 rounded-2xl text-xl font-extrabold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 ${
                       isDone
-                      ? 'bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 cursor-default'
+                      ? 'bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 cursor-pointer'
                       : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)]'
                     }`}
+                    title={isDone ? "Click to uncheck/undo" : "Click to mark done"}
                   >
                     {isDone ? (
-                      <><span>✅</span> Done</>
+                      <><span>✅</span> Done (Undo?)</>
                     ) : (
                       <><span>✓</span> I Did This</>
                     )}

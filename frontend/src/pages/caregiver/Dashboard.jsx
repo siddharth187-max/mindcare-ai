@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('routines'); // 'routines' or 'reminders'
+  const [resetting, setResetting] = useState(false);
 
   // Modals state
   const [showRoutineModal, setShowRoutineModal] = useState(false);
@@ -32,19 +33,22 @@ const Dashboard = () => {
     category: 'other',
   });
 
-  const getDefaultReminderTime = () => {
+  const getLocalDefaultTime = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
     now.setMinutes(0);
-    return now.toISOString().slice(0, 16);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const [reminderForm, setReminderForm] = useState({
     title: '',
-    scheduledTime: getDefaultReminderTime(),
+    scheduledTime: getLocalDefaultTime(),
   });
-
-  const lastActivityCount = useRef(0);
 
   const fetchPatients = async () => {
     try {
@@ -107,12 +111,32 @@ const Dashboard = () => {
   const handleAddReminder = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/reminders', { ...reminderForm, patientId: selectedPatientId });
+      const localDate = new Date(reminderForm.scheduledTime);
+      const isoTime = isNaN(localDate.getTime()) ? reminderForm.scheduledTime : localDate.toISOString();
+
+      await api.post('/reminders', {
+        title: reminderForm.title,
+        scheduledTime: isoTime,
+        patientId: selectedPatientId
+      });
       setShowReminderModal(false);
-      setReminderForm({ title: '', scheduledTime: getDefaultReminderTime() });
+      setReminderForm({ title: '', scheduledTime: getLocalDefaultTime() });
       fetchDashboardData(selectedPatientId, true);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleResetAllRoutines = async () => {
+    if (!window.confirm("Reset all routines to pending so the patient can do them again?")) return;
+    setResetting(true);
+    try {
+      await api.post(`/routines/reset/${selectedPatientId}`);
+      await fetchDashboardData(selectedPatientId, true);
+    } catch (err) {
+      console.error("Error resetting routines:", err);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -215,11 +239,11 @@ const Dashboard = () => {
         <div className={`p-5 rounded-2xl border ${cardStyle}`}>
           <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${subTextStyle}`}>Active Reminders</p>
           <p className="text-3xl font-extrabold text-amber-500">{activeReminders.length}</p>
-          <span className="text-xs text-slate-400 mt-1 block">Scheduled for Patient</span>
+          <span className="text-xs text-slate-400 mt-1 block">Scheduled in Local Time</span>
         </div>
       </div>
 
-      {/* 🔴 LIVE PATIENT ACTIVITY & TELEMETRY STREAM (Patient Working Notifications) */}
+      {/* 🔴 LIVE PATIENT ACTIVITY & TELEMETRY STREAM */}
       <div className={`p-6 rounded-3xl border ${cardStyle} shadow-[0_0_30px_rgba(59,130,246,0.1)]`}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -239,8 +263,9 @@ const Dashboard = () => {
         <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
           {recentActivity.length > 0 ? (
             recentActivity.map((act) => {
-              const timeStr = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const dateStr = new Date(act.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+              const d = new Date(act.timestamp);
+              const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+              const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 
               return (
                 <div 
@@ -317,9 +342,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tabbed Routines & Reminders Management */}
+        {/* Tabbed Routines & Reminders Management with RESET button */}
         <div className={`p-6 rounded-2xl border flex flex-col ${cardStyle}`}>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
               <button
                 onClick={() => setActiveTab('routines')}
@@ -340,6 +365,18 @@ const Dashboard = () => {
             </div>
 
             <div className="flex gap-2">
+              {activeTab === 'routines' && (
+                <button
+                  onClick={handleResetAllRoutines}
+                  disabled={resetting}
+                  className="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1 active:scale-95"
+                  title="Reset all completed tasks to pending for a new day"
+                >
+                  <span>🔄</span>
+                  <span>{resetting ? 'Resetting...' : 'Reset All'}</span>
+                </button>
+              )}
+
               {activeTab === 'reminders' ? (
                 <button
                   onClick={() => setShowReminderModal(true)}
@@ -395,33 +432,39 @@ const Dashboard = () => {
               )
             ) : (
               activeReminders?.length > 0 ? (
-                activeReminders.map((rem) => (
-                  <div 
-                    key={rem._id} 
-                    className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
-                      darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-bold text-sm text-white">{rem.title}</p>
-                      <p className={`text-xs ${subTextStyle}`}>
-                        ⏰ {new Date(rem.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(rem.scheduledTime).toLocaleDateString([], { month: 'short', day: 'numeric' })})
-                      </p>
+                activeReminders.map((rem) => {
+                  const d = new Date(rem.scheduledTime);
+                  const timeFormatted = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                  const dateFormatted = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                  return (
+                    <div 
+                      key={rem._id} 
+                      className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
+                        darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-white">{rem.title}</p>
+                        <p className={`text-xs ${subTextStyle}`}>
+                          ⏰ {dateFormatted} at <strong className="text-amber-400">{timeFormatted}</strong>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                          {rem.status}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteReminder(rem._id)} 
+                          className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
+                          title="Delete reminder"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                        {rem.status}
-                      </span>
-                      <button 
-                        onClick={() => handleDeleteReminder(rem._id)} 
-                        className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
-                        title="Delete reminder"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-slate-400 text-center py-8 text-sm">No active reminders. Click "+ Add Reminder" above.</p>
               )
@@ -498,7 +541,7 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}>
             <h3 className="text-xl font-extrabold mb-1">Add Safety Reminder</h3>
-            <p className="text-xs text-slate-400 mb-4">Broadcasts directly to patient companion view</p>
+            <p className="text-xs text-slate-400 mb-4">Broadcasts to patient view in your exact local time zone.</p>
             <form onSubmit={handleAddReminder} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Reminder Title</label>
@@ -512,7 +555,7 @@ const Dashboard = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Scheduled Date & Time</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Scheduled Date & Time (Your Local Time)</label>
                 <input 
                   required 
                   type="datetime-local" 

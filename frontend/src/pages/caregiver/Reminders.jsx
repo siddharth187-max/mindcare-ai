@@ -10,15 +10,20 @@ const Reminders = () => {
   const [filter, setFilter] = useState('all'); // 'all', 'pending', 'completed', 'missed'
   const [showModal, setShowModal] = useState(false);
   
-  // Default scheduled time to today + 1 hour
-  const getDefaultTime = () => {
+  // Format local date/time for <input type="datetime-local"> without UTC shift
+  const getLocalDefaultTime = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
     now.setMinutes(0);
-    return now.toISOString().slice(0, 16);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const [form, setForm] = useState({ title: '', scheduledTime: getDefaultTime() });
+  const [form, setForm] = useState({ title: '', scheduledTime: getLocalDefaultTime() });
 
   const fetchReminders = async (pid) => {
     try {
@@ -26,7 +31,6 @@ const Reminders = () => {
       setReminders(res.data.reminders || res.data || []);
     } catch (err) {
       console.error("Error loading reminders:", err);
-      // Fallback to pending
       try {
         const pRes = await api.get(`/reminders/pending/${pid}`);
         setReminders(pRes.data.reminders || pRes.data || []);
@@ -60,13 +64,17 @@ const Reminders = () => {
     if (!form.title || !form.scheduledTime) return;
 
     try {
+      // Parse local time explicitly so timezone offset is preserved
+      const localDate = new Date(form.scheduledTime);
+      const isoTime = isNaN(localDate.getTime()) ? form.scheduledTime : localDate.toISOString();
+
       await api.post('/reminders', {
         title: form.title,
-        scheduledTime: form.scheduledTime,
+        scheduledTime: isoTime,
         patientId
       });
       setShowModal(false);
-      setForm({ title: '', scheduledTime: getDefaultTime() });
+      setForm({ title: '', scheduledTime: getLocalDefaultTime() });
       await fetchReminders(patientId);
     } catch (err) {
       console.error("Error creating reminder:", err);
@@ -121,13 +129,13 @@ const Reminders = () => {
             Care Reminders & Scheduled Alerts
           </h2>
           <p className={`text-sm font-medium ${subTextStyle} mt-0.5`}>
-            Schedule medication alerts, hydration reminders, and family check-ins for the patient.
+            Schedule medication alerts, hydration reminders, and family check-ins in your exact local time.
           </p>
         </div>
 
         <button
           onClick={() => {
-            setForm({ title: '', scheduledTime: getDefaultTime() });
+            setForm({ title: '', scheduledTime: getLocalDefaultTime() });
             setShowModal(true);
           }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm flex items-center gap-2"
@@ -173,8 +181,8 @@ const Reminders = () => {
             const isCompleted = rem.status === 'completed';
             const isMissed = rem.status === 'missed';
             const dateObj = new Date(rem.scheduledTime);
-            const dateStr = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
-            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = dateObj.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            const timeStr = dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
             return (
               <div 
@@ -211,7 +219,7 @@ const Reminders = () => {
                   <h4 className="text-lg font-bold mb-2 text-white">{rem.title}</h4>
                   <p className={`text-sm ${subTextStyle} mb-6 flex items-center gap-1.5 font-medium`}>
                     <span>⏰</span>
-                    <span>{dateStr} at {timeStr}</span>
+                    <span>{dateStr} at <strong className="text-blue-400 font-bold">{timeStr}</strong></span>
                   </p>
                 </div>
 
@@ -226,7 +234,7 @@ const Reminders = () => {
                   )}
                   {isCompleted && (
                     <span className="text-xs text-emerald-400 font-bold py-2 flex items-center gap-1">
-                      <span>✅</span> Completed {rem.completedAt ? new Date(rem.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      <span>✅</span> Completed {rem.completedAt ? new Date(rem.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
                     </span>
                   )}
                 </div>
@@ -247,7 +255,7 @@ const Reminders = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}>
             <h3 className="text-xl font-extrabold mb-1">Create Patient Reminder</h3>
-            <p className="text-xs text-slate-400 mb-4">This reminder will be broadcast directly to the patient's companion view.</p>
+            <p className="text-xs text-slate-400 mb-4">Saved in your exact local time zone and sent to patient view.</p>
             
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
@@ -255,14 +263,14 @@ const Reminders = () => {
                 <input 
                   required 
                   type="text" 
-                  placeholder="e.g. Take Blood Pressure Medication" 
+                  placeholder="e.g. Afternoon Medication" 
                   className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-300'}`} 
                   value={form.title} 
                   onChange={e => setForm({...form, title: e.target.value})} 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Scheduled Date & Time</label>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Scheduled Date & Time (Your Local Time)</label>
                 <input 
                   required 
                   type="datetime-local" 

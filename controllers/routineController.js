@@ -1,5 +1,6 @@
 // controllers/routineController.js
-// CRUD for daily routine items (brush teeth, breakfast, medicine, etc.)
+// CRUD operations for a patient's daily routine. Only the patient themselves
+// or their assigned caregiver can view/modify them.
 
 const Routine = require("../models/Routine");
 const Patient = require("../models/Patient");
@@ -17,14 +18,14 @@ async function assertAccessToPatient(patientId, user) {
 }
 
 // @route  POST /api/routines
-// @desc   Add a new routine item
+// @desc   Add a routine item for a patient
 // @access Private
 const addRoutineItem = async (req, res) => {
   try {
     const { patientId, title, description, scheduledTime, category, reminderEnabled } = req.body;
 
     if (!patientId || !title || !scheduledTime) {
-      return res.status(400).json({ message: "patientId, title and scheduledTime are required" });
+      return res.status(400).json({ message: "patientId, title, and scheduledTime are required" });
     }
 
     const access = await assertAccessToPatient(patientId, req.user);
@@ -46,18 +47,14 @@ const addRoutineItem = async (req, res) => {
 };
 
 // @route  GET /api/routines/today/:patientId
-// @desc   Get today's full routine for a patient (all items, ordered by time)
+// @desc   Get all routine items for a patient
 // @access Private
 const getTodayRoutine = async (req, res) => {
   try {
     const access = await assertAccessToPatient(req.params.patientId, req.user);
     if (!access.ok) return res.status(access.status).json({ message: access.message });
 
-    // NOTE: routine items are recurring daily items identified by scheduledTime
-    // ("HH:mm"), so "today's routine" is simply every routine item for this
-    // patient, sorted by time of day.
     const routines = await Routine.find({ patientId: req.params.patientId }).sort({ scheduledTime: 1 });
-
     res.status(200).json({ count: routines.length, routines });
   } catch (error) {
     res.status(500).json({ message: "Server error fetching routine", error: error.message });
@@ -65,7 +62,7 @@ const getTodayRoutine = async (req, res) => {
 };
 
 // @route  PUT /api/routines/:id
-// @desc   Update a routine item's details
+// @desc   Update a routine item
 // @access Private
 const updateRoutineItem = async (req, res) => {
   try {
@@ -108,6 +105,47 @@ const completeRoutineItem = async (req, res) => {
   }
 };
 
+// @route  PATCH /api/routines/:id/uncomplete
+// @desc   Mark a routine item as pending (uncomplete)
+// @access Private
+const uncompleteRoutineItem = async (req, res) => {
+  try {
+    const routine = await Routine.findById(req.params.id);
+    if (!routine) return res.status(404).json({ message: "Routine item not found" });
+
+    const access = await assertAccessToPatient(routine.patientId, req.user);
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    routine.completed = false;
+    routine.completedAt = null;
+    await routine.save();
+
+    res.status(200).json({ message: "Routine item marked as pending", routine });
+  } catch (error) {
+    res.status(500).json({ message: "Server error uncompleting routine item", error: error.message });
+  }
+};
+
+// @route  POST /api/routines/reset/:patientId
+// @desc   Reset all routines for a patient to pending (for a new day or test run)
+// @access Private
+const resetRoutines = async (req, res) => {
+  try {
+    const access = await assertAccessToPatient(req.params.patientId, req.user);
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    await Routine.updateMany(
+      { patientId: req.params.patientId },
+      { $set: { completed: false, completedAt: null } }
+    );
+
+    const routines = await Routine.find({ patientId: req.params.patientId }).sort({ scheduledTime: 1 });
+    res.status(200).json({ message: "All routines reset to pending", routines });
+  } catch (error) {
+    res.status(500).json({ message: "Server error resetting routines", error: error.message });
+  }
+};
+
 // @route  DELETE /api/routines/:id
 // @desc   Delete a routine item
 // @access Private
@@ -131,5 +169,7 @@ module.exports = {
   getTodayRoutine,
   updateRoutineItem,
   completeRoutineItem,
+  uncompleteRoutineItem,
+  resetRoutines,
   deleteRoutineItem,
 };
