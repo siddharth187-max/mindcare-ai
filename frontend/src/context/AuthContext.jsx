@@ -39,8 +39,8 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
-  async function register(name, email, password, role) {
-    const { data } = await api.post('/auth/register', { name, email, password, role });
+  async function register(name, email, password, role, caregiverEmail, patientEmailOrCode) {
+    const { data } = await api.post('/auth/register', { name, email, password, role, caregiverEmail, patientEmailOrCode });
     localStorage.setItem('mindcare_token', data.token);
     localStorage.setItem('mindcare_user', JSON.stringify(data.user));
     setToken(data.token);

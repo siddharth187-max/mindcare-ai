@@ -1,5 +1,5 @@
 // controllers/authController.js
-// Handles account creation and login.
+// Handles account creation, registration linking, and login.
 
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
@@ -7,11 +7,11 @@ const Patient = require("../models/Patient");
 const generateToken = require("../utils/generateToken");
 
 // @route  POST /api/auth/register
-// @desc   Create a new user (patient or caregiver)
+// @desc   Create a new user (patient or caregiver) with optional direct partner linking
 // @access Public
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, caregiverEmail, patientEmailOrCode } = req.body;
 
     // --- basic validation ---
     if (!name || !email || !password || !role) {
@@ -25,37 +25,74 @@ const register = async (req, res) => {
     }
 
     // check if a user with this email already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       return res.status(409).json({ message: "An account with this email already exists" });
     }
 
-    // hash the password before saving - NEVER store plain text passwords
+    // hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password: hashedPassword,
       role,
     });
 
-    // If registering as a patient, automatically initialize their Patient profile
+    let linkedPartnerName = null;
+
+    // If registering as a patient
     if (role === "patient") {
+      let linkedCaregiverId = null;
+
+      // If patient supplied their caregiver's email during registration
+      if (caregiverEmail && caregiverEmail.trim()) {
+        const cg = await User.findOne({ email: caregiverEmail.toLowerCase().trim(), role: "caregiver" });
+        if (cg) {
+          linkedCaregiverId = cg._id;
+          linkedPartnerName = cg.name;
+        }
+      }
+
       await Patient.create({
         userId: user._id,
         name: user.name,
         age: 70,
+        caregiverId: linkedCaregiverId,
         preferredLanguage: "English",
       });
     }
 
+    // If registering as a caregiver
+    if (role === "caregiver" && patientEmailOrCode && patientEmailOrCode.trim()) {
+      const trimmed = patientEmailOrCode.trim();
+      const isCode = trimmed.toUpperCase().startsWith("MC-");
+
+      let patDoc = null;
+      if (isCode) {
+        patDoc = await Patient.findOne({ pairCode: trimmed.toUpperCase() });
+      } else {
+        const patUser = await User.findOne({ email: trimmed.toLowerCase() });
+        if (patUser) {
+          patDoc = await Patient.findOne({ userId: patUser._id });
+        }
+      }
+
+      if (patDoc) {
+        patDoc.caregiverId = user._id;
+        await patDoc.save();
+        linkedPartnerName = patDoc.name;
+      }
+    }
+
     const token = generateToken(user._id, user.role);
 
-    // respond WITHOUT the password field
     res.status(201).json({
-      message: "Account created successfully",
+      message: linkedPartnerName 
+        ? `Account created and successfully linked with ${linkedPartnerName}!` 
+        : "Account created successfully",
       token,
       user: {
         id: user._id,
@@ -80,8 +117,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: "Please provide email and password" });
     }
 
-    // .select("+password") because the schema hides password by default
-    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+password");
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
