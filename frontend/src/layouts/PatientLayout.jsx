@@ -227,24 +227,33 @@ const PatientLayout = () => {
 
             <div className="bg-slate-950 p-5 rounded-2xl mb-6 text-left border border-slate-800">
               <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">📍 Home Anchor Address</div>
-              <div className="text-xl font-bold text-slate-100">442 Maplewood Drive, Apt 3B</div>
-              <div className="text-sm text-slate-400 mt-1">Caregiver on duty: Sarah Jenkins • (555) 382-9012</div>
+              <div className="text-lg sm:text-xl font-bold text-slate-100">442 Maplewood Enclave, Block B, New Delhi, India</div>
+              <div className="text-sm text-slate-400 mt-1">Caregiver on duty: Sarah Jenkins • +91 98765 43210</div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid sm:grid-cols-2 gap-3 mb-3">
               <a 
-                href="tel:911"
-                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
+                href="tel:112"
+                className="py-4 px-5 text-lg font-black rounded-2xl bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
-                🚨 Call Emergency (911)
+                <span>🚨</span>
+                <span>Call 112 (Emergency)</span>
               </a>
-              <button 
-                onClick={() => setShowEmergency(false)}
-                className="flex-1 py-4 px-6 text-xl font-bold rounded-2xl bg-purple-600 hover:bg-purple-700 text-white shadow-lg active:scale-95 transition-all"
+              <a 
+                href="tel:+919876543210"
+                className="py-4 px-5 text-lg font-black rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
-                ✓ I Feel Safe (Close)
-              </button>
+                <span>📞</span>
+                <span>Call Caregiver</span>
+              </a>
             </div>
+
+            <button 
+              onClick={() => setShowEmergency(false)}
+              className="w-full py-3.5 px-6 text-lg font-bold rounded-2xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-slate-700 active:scale-95 transition-all"
+            >
+              ✓ I Feel Safe (Close Dialog)
+            </button>
           </div>
         </div>
       )}

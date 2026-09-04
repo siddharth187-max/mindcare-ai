@@ -7,6 +7,7 @@ const Routine = require("../models/Routine");
 const Reminder = require("../models/Reminder");
 const GameResult = require("../models/GameResult");
 const { buildPatientStats } = require("../utils/analyticsHelper");
+const { checkAndResetDailyRoutines } = require("../utils/streakHelper");
 
 // @route  GET /api/caregiver/patients
 // @desc   List every patient assigned to the logged-in caregiver
@@ -22,13 +23,15 @@ const getMyPatients = async (req, res) => {
 
 // @route  GET /api/caregiver/dashboard/:patientId
 // @desc   Full dashboard for one assigned patient: profile, today's routine,
-//         completed/missed activities, live activity stream, escalated alerts, stats.
+//         completed/missed activities, live activity stream, escalated alerts, streaks, stats.
 // @access Private (caregiver only, and only for THEIR patient)
 const getPatientDashboard = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    const patient = await Patient.findById(patientId);
+    // Auto-check and reset routines if new day arrived + check streak
+    let patient = await checkAndResetDailyRoutines(patientId);
+    if (!patient) patient = await Patient.findById(patientId);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
 
     // Security check: this caregiver must be the one assigned to this patient
@@ -58,7 +61,21 @@ const getPatientDashboard = async (req, res) => {
     // Live Patient Activity Stream (Notifications of the patient working + Alerts)
     const activityFeed = [];
 
-    // 1. Escalated alerts (Highest Priority)
+    // 1. Missed Day Inactivity Alert (if patient missed yesterday's routines entirely)
+    if (patient.missedDaysAlert) {
+      activityFeed.push({
+        id: "missed-day-" + (patient.lastMissedDate || "alert"),
+        type: "inactivity",
+        title: `⚠️ INACTIVITY ALERT: ${patient.name} Missed Daily Activities`,
+        detail: `No routines or games recorded on ${patient.lastMissedDate || "yesterday"}. Activity streak was broken. Please check on patient wellbeing.`,
+        icon: "⚠️",
+        timestamp: new Date(),
+        badge: "Missed Day Alert",
+        badgeColor: "rose",
+      });
+    }
+
+    // 2. Escalated alerts (Highest Priority)
     escalatedAlerts.forEach((rem) => {
       activityFeed.push({
         id: "escalated-" + rem._id,
@@ -72,7 +89,7 @@ const getPatientDashboard = async (req, res) => {
       });
     });
 
-    // 2. Completed routines
+    // 3. Completed routines
     completedActivities.forEach((r) => {
       activityFeed.push({
         id: "routine-" + r._id,
@@ -86,7 +103,7 @@ const getPatientDashboard = async (req, res) => {
       });
     });
 
-    // 3. Completed / acknowledged reminders
+    // 4. Completed / acknowledged reminders
     completedReminders.forEach((rem) => {
       activityFeed.push({
         id: "reminder-" + rem._id,
@@ -100,7 +117,7 @@ const getPatientDashboard = async (req, res) => {
       });
     });
 
-    // 4. Cognitive game sessions played
+    // 5. Cognitive game sessions played
     const gameTypeLabels = {
       memory: "Memory Card Match",
       pattern: "Melody & Pattern Chimes",
@@ -133,6 +150,12 @@ const getPatientDashboard = async (req, res) => {
       activeReminders,
       allReminders,
       escalatedAlerts,
+      missedDayAlert: patient.missedDaysAlert,
+      streak: {
+        current: patient.currentStreak || 0,
+        longest: patient.longestStreak || 0,
+        lastActiveDate: patient.lastActiveDate,
+      },
       recentActivity: activityFeed.slice(0, 15),
       stats,
     });

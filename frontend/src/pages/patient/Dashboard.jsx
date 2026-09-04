@@ -244,9 +244,16 @@ const Dashboard = () => {
         <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="text-center relative z-10">
-          <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r border shadow-sm mb-4">
-            <span className="text-2xl">{period.icon}</span>
-            <span className="uppercase tracking-wider">{period.name} Time</span>
+          <div className="flex items-center justify-center gap-3 flex-wrap mb-4">
+            <div className={`inline-flex items-center gap-2.5 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r border shadow-sm ${period.color}`}>
+              <span className="text-2xl">{period.icon}</span>
+              <span className="uppercase tracking-wider">{period.name} Time</span>
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+              <span className="text-2xl animate-bounce">🔥</span>
+              <span>{patient?.currentStreak || 1}-Day Streak</span>
+            </div>
           </div>
 
           <div className="my-2">

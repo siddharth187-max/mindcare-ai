@@ -286,16 +286,43 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Top Patient Header with Live Telemetry Pulse */}
+      {/* ⚠️ MISSED DAY INACTIVITY BANNER (If patient was inactive yesterday) */}
+      {dashboardData?.missedDayAlert && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/80 border-2 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-fadeIn">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl p-2 rounded-xl bg-amber-900/60 border border-amber-500/50">⚠️</span>
+              <div>
+                <h4 className="text-lg font-black text-amber-200">Patient Inactivity Notice: Missed Day</h4>
+                <p className="text-xs sm:text-sm text-amber-300 font-medium">
+                  {patient?.name} did not record any routines or brain activities yesterday ({patient?.lastMissedDate || 'yesterday'}). Daily streak was reset.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => alert(`Calling primary contact for ${patient?.name || 'patient'}...`)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow transition-all active:scale-95 whitespace-nowrap self-end sm:self-auto"
+            >
+              📞 Check On Patient
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Top Patient Header with Live Telemetry Pulse & Streak */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h2 className={`text-2xl sm:text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {patient?.name}'s Telemetry
             </h2>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               Live Sync Active
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm">
+              <span>🔥</span>
+              <span>{dashboardData?.streak?.current || patient?.currentStreak || 1} Day Streak</span>
             </span>
           </div>
           {patient?.age && <p className={`text-sm font-semibold ${subTextStyle} mt-0.5`}>Age: {patient.age} • Care Profile Monitored 24/7</p>}

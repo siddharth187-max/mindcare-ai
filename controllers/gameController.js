@@ -4,15 +4,15 @@
 const GameResult = require("../models/GameResult");
 const Patient = require("../models/Patient");
 const { getNextDifficulty } = require("../utils/adaptiveDifficulty");
+const { recordPatientActivity } = require("../utils/streakHelper");
 
 // Helper: confirm the logged-in user is allowed to act on this patientId
-// (must be the patient themself or their assigned caregiver)
 async function assertAccessToPatient(patientId, user) {
   const patient = await Patient.findById(patientId);
   if (!patient) return { ok: false, status: 404, message: "Patient not found" };
 
-  const isOwner = patient.userId.toString() === user._id.toString();
-  const isCaregiver = patient.caregiverId.toString() === user._id.toString();
+  const isOwner = patient.userId && patient.userId.toString() === user._id.toString();
+  const isCaregiver = patient.caregiverId && patient.caregiverId.toString() === user._id.toString();
   if (!isOwner && !isCaregiver) {
     return { ok: false, status: 403, message: "Not authorized for this patient" };
   }
@@ -44,8 +44,9 @@ const recordGameResult = async (req, res) => {
       timeTaken,
     });
 
-    // Also tell the frontend what difficulty to use NEXT, so it can be
-    // used immediately without a second API call if desired.
+    // Record streak activity for playing cognitive brain activities
+    await recordPatientActivity(patientId);
+
     const recommendedNextDifficulty = getNextDifficulty(difficulty, accuracy);
 
     res.status(201).json({
@@ -66,31 +67,43 @@ const getGameHistory = async (req, res) => {
     const access = await assertAccessToPatient(req.params.patientId, req.user);
     if (!access.ok) return res.status(access.status).json({ message: access.message });
 
-    const history = await GameResult.find({ patientId: req.params.patientId }).sort({ completedAt: -1 });
+    const results = await GameResult.find({ patientId: req.params.patientId }).sort({ completedAt: -1 });
 
-    res.status(200).json({ count: history.length, history });
+    res.status(200).json({ count: results.length, results });
   } catch (error) {
     res.status(500).json({ message: "Server error fetching game history", error: error.message });
   }
 };
 
 // @route  POST /api/games/next-difficulty
-// @desc   Given the latest performance, return the recommended next difficulty
-//         (does NOT save anything - just runs the algorithm)
+// @desc   Determine the next difficulty level for a game type based on recent performance
 // @access Private
 const getRecommendedDifficulty = async (req, res) => {
   try {
-    const { currentDifficulty, accuracy } = req.body;
+    const { patientId, gameType } = req.body;
 
-    if (!currentDifficulty || accuracy == null) {
-      return res.status(400).json({ message: "currentDifficulty and accuracy are required" });
+    if (!patientId || !gameType) {
+      return res.status(400).json({ message: "patientId and gameType are required" });
     }
 
-    const recommendedNextDifficulty = getNextDifficulty(currentDifficulty, accuracy);
-    res.status(200).json({ currentDifficulty, accuracy, recommendedNextDifficulty });
+    const access = await assertAccessToPatient(patientId, req.user);
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    const lastResult = await GameResult.findOne({ patientId, gameType }).sort({ completedAt: -1 });
+
+    if (!lastResult) {
+      return res.status(200).json({ recommendedDifficulty: "easy" });
+    }
+
+    const recommendedDifficulty = getNextDifficulty(lastResult.difficulty, lastResult.accuracy);
+    res.status(200).json({ recommendedDifficulty, lastResult });
   } catch (error) {
-    res.status(500).json({ message: "Server error calculating difficulty", error: error.message });
+    res.status(500).json({ message: "Server error determining difficulty", error: error.message });
   }
 };
 
-module.exports = { recordGameResult, getGameHistory, getRecommendedDifficulty };
+module.exports = {
+  recordGameResult,
+  getGameHistory,
+  getRecommendedDifficulty,
+};

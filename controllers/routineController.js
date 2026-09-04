@@ -1,16 +1,16 @@
 // controllers/routineController.js
-// CRUD operations for a patient's daily routine. Only the patient themselves
-// or their assigned caregiver can view/modify them.
+// CRUD operations for a patient's daily routine with automatic new-day reset and streak tracking.
 
 const Routine = require("../models/Routine");
 const Patient = require("../models/Patient");
+const { checkAndResetDailyRoutines, recordPatientActivity } = require("../utils/streakHelper");
 
 async function assertAccessToPatient(patientId, user) {
   const patient = await Patient.findById(patientId);
   if (!patient) return { ok: false, status: 404, message: "Patient not found" };
 
-  const isOwner = patient.userId.toString() === user._id.toString();
-  const isCaregiver = patient.caregiverId.toString() === user._id.toString();
+  const isOwner = patient.userId && patient.userId.toString() === user._id.toString();
+  const isCaregiver = patient.caregiverId && patient.caregiverId.toString() === user._id.toString();
   if (!isOwner && !isCaregiver) {
     return { ok: false, status: 403, message: "Not authorized for this patient" };
   }
@@ -47,12 +47,15 @@ const addRoutineItem = async (req, res) => {
 };
 
 // @route  GET /api/routines/today/:patientId
-// @desc   Get all routine items for a patient
+// @desc   Get all routine items for a patient (auto-resets if new day)
 // @access Private
 const getTodayRoutine = async (req, res) => {
   try {
     const access = await assertAccessToPatient(req.params.patientId, req.user);
     if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    // Auto-check and reset routines if a new calendar day has arrived
+    await checkAndResetDailyRoutines(req.params.patientId);
 
     const routines = await Routine.find({ patientId: req.params.patientId }).sort({ scheduledTime: 1 });
     res.status(200).json({ count: routines.length, routines });
@@ -85,7 +88,7 @@ const updateRoutineItem = async (req, res) => {
 };
 
 // @route  PATCH /api/routines/:id/complete
-// @desc   Mark a routine item as completed
+// @desc   Mark a routine item as completed and update daily streak!
 // @access Private
 const completeRoutineItem = async (req, res) => {
   try {
@@ -98,6 +101,9 @@ const completeRoutineItem = async (req, res) => {
     routine.completed = true;
     routine.completedAt = new Date();
     await routine.save();
+
+    // Record streak activity
+    await recordPatientActivity(routine.patientId);
 
     res.status(200).json({ message: "Routine item marked as completed", routine });
   } catch (error) {
@@ -127,7 +133,7 @@ const uncompleteRoutineItem = async (req, res) => {
 };
 
 // @route  POST /api/routines/reset/:patientId
-// @desc   Reset all routines for a patient to pending (for a new day or test run)
+// @desc   Reset all routines for a patient to pending
 // @access Private
 const resetRoutines = async (req, res) => {
   try {
