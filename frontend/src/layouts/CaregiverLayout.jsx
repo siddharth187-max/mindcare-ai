@@ -45,10 +45,12 @@ const CaregiverLayout = () => {
   };
 
   const navItems = [
-    { name: '📊 Telemetry Dashboard', path: '/caregiver', end: true },
+    { name: '📊 Dashboard', path: '/caregiver', end: true },
+    { name: '📍 Wandering Radar', path: '/caregiver/radar' },
+    { name: '🖼️ Memory Vault', path: '/caregiver/memories' },
     { name: '📈 Cognitive Trends', path: '/caregiver/progress' },
-    { name: '🏆 Activity History', path: '/caregiver/results' },
-    { name: '⏰ Care Reminders', path: '/caregiver/reminders' },
+    { name: '🏆 Results', path: '/caregiver/results' },
+    { name: '⏰ Reminders', path: '/caregiver/reminders' },
     { name: '🔔 Safety Alerts', path: '/caregiver/alerts' },
   ];
 

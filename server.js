@@ -32,6 +32,8 @@ app.use("/api/routines", require("./routes/routineRoutes"));
 app.use("/api/reminders", require("./routes/reminderRoutes"));
 app.use("/api/caregiver", require("./routes/caregiverRoutes"));
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
+app.use("/api/memories", require("./routes/memoryRoutes"));
+app.use("/api/geofence", require("./routes/geofenceRoutes"));
 
 // --- Serve frontend static files if present ---
 const path = require("path");

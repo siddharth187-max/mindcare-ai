@@ -81,6 +81,34 @@ const patientSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  // Geofencing & Wandering Safety Radar
+  safeZone: {
+    center: {
+      lat: { type: Number, default: 28.6139 }, // Default New Delhi coordinates
+      lng: { type: Number, default: 77.2090 },
+    },
+    radiusMeters: { type: Number, default: 500 }, // Safe zone radius
+    address: { type: String, default: "442 Maplewood Enclave, Block B, New Delhi, India" },
+  },
+  lastKnownLocation: {
+    lat: { type: Number, default: 28.6139 },
+    lng: { type: Number, default: 77.2090 },
+    timestamp: { type: Date, default: Date.now },
+    isSafe: { type: Boolean, default: true },
+    distanceFromCenter: { type: Number, default: 0 },
+    batteryLevel: { type: Number, default: 92 },
+  },
+  wanderingAlerts: [
+    {
+      timestamp: { type: Date, default: Date.now },
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
+      distanceMeters: { type: Number, default: 0 },
+      status: { type: String, default: "BREACHED" }, // "BREACHED" | "SOS_TRIGGERED" | "RESOLVED"
+      triggeredBy: { type: String, default: "GEOFENCE_RADAR" }, // "GEOFENCE_RADAR" | "PATIENT_SOS"
+      note: { type: String, default: "Patient exited designated 500m safe zone perimeter." },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

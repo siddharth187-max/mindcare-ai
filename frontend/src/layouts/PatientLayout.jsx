@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getAudioContext, triggerHapticAlert, triggerBrowserNotification, playChime } from '../hooks/useVoice';
+import api from '../api/axios';
+import { getAudioContext, triggerHapticAlert, triggerBrowserNotification, playChime, speakText } from '../hooks/useVoice';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
 const PatientLayout = () => {
@@ -12,6 +13,8 @@ const PatientLayout = () => {
   const [highContrast, setHighContrast] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showMobileAudioBanner, setShowMobileAudioBanner] = useState(false);
+  const [patientData, setPatientData] = useState(null);
+  const [sosSent, setSosSent] = useState(false);
 
   useEffect(() => {
     // Check if audio has been unlocked on this device
@@ -19,6 +22,17 @@ const PatientLayout = () => {
     if (!isUnlocked) {
       setShowMobileAudioBanner(true);
     }
+
+    // Load patient data for emergency contact
+    async function loadPatient() {
+      try {
+        const { data } = await api.get('/patients/me');
+        setPatientData(data?.patient || data);
+      } catch (err) {
+        console.warn('Failed to load patient info for emergency layout:', err);
+      }
+    }
+    loadPatient();
   }, []);
 
   const handleUnlockMobileAudio = () => {
@@ -37,6 +51,39 @@ const PatientLayout = () => {
     }
   };
 
+  const handleTriggerSOSBeacon = async () => {
+    try {
+      playChime('click');
+      let currentLat = 28.6139;
+      let currentLng = 77.2090;
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+          },
+          (err) => console.warn('GPS error, using fallback:', err),
+          { timeout: 3000 }
+        );
+      }
+
+      const pId = patientData?._id;
+      if (pId) {
+        await api.post('/geofence/trigger-sos', {
+          patientId: pId,
+          lat: currentLat,
+          lng: currentLng,
+        });
+      }
+
+      setSosSent(true);
+      speakText('Your live location has been sent to your caregiver radar. Please stay where you are, help is on the way.');
+    } catch (err) {
+      console.error('Failed to dispatch SOS radar beacon:', err);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -49,6 +96,9 @@ const PatientLayout = () => {
       default: return 'text-base';
     }
   };
+
+  const caregiverPhone = patientData?.caregiverPhone || '+91 98765 43210';
+  const homeAddress = patientData?.emergencyAddress || '442 Maplewood Enclave, Block B, New Delhi, India';
 
   return (
     <div className={`min-h-screen flex flex-col ${
@@ -146,6 +196,17 @@ const PatientLayout = () => {
               </NavLink>
 
               <NavLink 
+                to="/patient/memory-lane" 
+                className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
+                  isActive 
+                  ? (highContrast ? 'bg-yellow-300 text-black border-yellow-300' : 'bg-purple-600 border-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)]') 
+                  : (highContrast ? 'border-yellow-300 text-yellow-300' : 'bg-slate-800/80 border-slate-700/70 text-slate-300 hover:bg-slate-700 hover:text-white')
+                }`}
+              >
+                🖼️ Memories
+              </NavLink>
+
+              <NavLink 
                 to="/patient/results" 
                 className={({isActive}) => `min-h-11 flex items-center justify-center px-4 py-2 rounded-xl text-base sm:text-lg font-extrabold border transition-all active:scale-95 ${
                   isActive 
@@ -222,14 +283,29 @@ const PatientLayout = () => {
               You Are Safe at Home
             </h2>
             <p className="text-xl sm:text-2xl mb-6 leading-relaxed text-slate-300 font-medium">
-              Take a slow, deep breath. Your home is warm, your door is secure, and your caregivers are monitoring you.
+              Take a slow, deep breath. Your home is warm, your door is secure, and your caregivers are watching over you.
             </p>
 
             <div className="bg-slate-950 p-5 rounded-2xl mb-6 text-left border border-slate-800">
               <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">📍 Home Anchor Address</div>
-              <div className="text-lg sm:text-xl font-bold text-slate-100">442 Maplewood Enclave, Block B, New Delhi, India</div>
-              <div className="text-sm text-slate-400 mt-1">Caregiver on duty: Sarah Jenkins • +91 98765 43210</div>
+              <div className="text-lg sm:text-xl font-bold text-slate-100">{homeAddress}</div>
+              <div className="text-sm text-slate-400 mt-1">Direct Emergency Caregiver Line: {caregiverPhone}</div>
             </div>
+
+            {sosSent ? (
+              <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold mb-4 animate-fadeIn">
+                ✓ Live GPS Beacon Dispatched to Caregiver Radar! Help is notified.
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleTriggerSOSBeacon}
+                className="w-full mb-3 py-3.5 px-4 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95"
+              >
+                <span>🧭</span>
+                <span>I Feel Lost / Send My Location Beacon</span>
+              </button>
+            )}
 
             <div className="grid sm:grid-cols-2 gap-3 mb-3">
               <a 
@@ -240,7 +316,7 @@ const PatientLayout = () => {
                 <span>Call 112 (Emergency)</span>
               </a>
               <a 
-                href="tel:+919876543210"
+                href={`tel:${caregiverPhone}`}
                 className="py-4 px-5 text-lg font-black rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
                 <span>📞</span>
@@ -249,7 +325,10 @@ const PatientLayout = () => {
             </div>
 
             <button 
-              onClick={() => setShowEmergency(false)}
+              onClick={() => {
+                setShowEmergency(false);
+                setSosSent(false);
+              }}
               className="w-full py-3.5 px-6 text-lg font-bold rounded-2xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-slate-700 active:scale-95 transition-all"
             >
               ✓ I Feel Safe (Close Dialog)

@@ -471,71 +471,90 @@ const Dashboard = () => {
       )}
 
       {/* Main Feature Cards Grid */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Today's Routine Card */}
-        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]`}>
+        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]`}>
           <div>
-            <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
               📋
             </div>
-            <h3 className="text-2xl font-black mb-2 text-white">Daily Routine</h3>
-            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              Step-by-step checklist of meals, hygiene, medications, and wellness activities.
+            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Daily Routine</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              Step-by-step checklist of meals, hygiene, medications, and wellness.
             </p>
           </div>
           <div className="space-y-2">
             <Link
               to="/patient/routine"
-              className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+              className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
             >
               Open Checklist →
             </Link>
             <button
               onClick={handleResetRoutinesFromDashboard}
               disabled={resettingRoutine}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-amber-300 hover:text-amber-200 bg-slate-950 border border-slate-800 hover:border-amber-500/40 transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-2 px-3 rounded-lg text-xs font-bold text-amber-300 hover:text-amber-200 bg-slate-950 border border-slate-800 hover:border-amber-500/40 transition-all flex items-center justify-center gap-1"
             >
               <span>🔄</span>
-              <span>{resettingRoutine ? 'Resetting...' : 'Reset Tasks to Pending'}</span>
+              <span>{resettingRoutine ? 'Resetting...' : 'Reset Tasks'}</span>
             </button>
           </div>
         </div>
 
         {/* Cognitive Games Card */}
-        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
+        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
           <div>
-            <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
               🧠
             </div>
-            <h3 className="text-2xl font-black mb-2 text-white">Brain Games</h3>
-            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              Calming memory cards, melodic chimes, and everyday object matching games.
+            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Brain Games</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              Calming memory cards, melodic chimes, and everyday object matching.
             </p>
           </div>
           <Link
             to="/patient/games"
-            className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
           >
             Play Activities →
           </Link>
         </div>
 
-        {/* My Progress Card */}
-        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]`}>
+        {/* Memory Lane Reminiscence Card */}
+        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]`}>
           <div>
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              🖼️
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Memory Lane</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              Cherished family photos, comforting stories, and fun recall quizzes.
+            </p>
+          </div>
+          <Link
+            to="/patient/memory-lane"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+          >
+            Open Memories →
+          </Link>
+        </div>
+
+        {/* My Progress Card */}
+        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
+          <div>
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
               📊
             </div>
-            <h3 className="text-2xl font-black mb-2 text-white">My Progress</h3>
-            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              See your activity achievements, scores, and cognitive session completions.
+            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">My Progress</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              See your activity achievements, scores, and cognitive milestones.
             </p>
           </div>
           <Link
             to="/patient/results"
-            className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
           >
-            View Achievements →
+            Achievements →
           </Link>
         </div>
       </div>
