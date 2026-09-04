@@ -7,11 +7,11 @@ const Patient = require("../models/Patient");
 const generateToken = require("../utils/generateToken");
 
 // @route  POST /api/auth/register
-// @desc   Create a new user (patient or caregiver) with optional direct partner linking
+// @desc   Create a new user (patient or caregiver with required phone)
 // @access Public
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, caregiverEmail, patientEmailOrCode } = req.body;
+    const { name, email, password, role, phone, caregiverEmail, patientEmailOrCode } = req.body;
 
     // --- basic validation ---
     if (!name || !email || !password || !role) {
@@ -22,6 +22,11 @@ const register = async (req, res) => {
     }
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    // Caregivers must provide their emergency contact phone number
+    if (role === "caregiver" && (!phone || !phone.trim())) {
+      return res.status(400).json({ message: "Caregivers must provide an emergency contact phone number for patient safety" });
     }
 
     // check if a user with this email already exists
@@ -37,6 +42,7 @@ const register = async (req, res) => {
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
+      phone: phone ? phone.trim() : "+91 98765 43210",
       password: hashedPassword,
       role,
     });
@@ -46,12 +52,14 @@ const register = async (req, res) => {
     // If registering as a patient
     if (role === "patient") {
       let linkedCaregiverId = null;
+      let caregiverPhoneNum = "+91 98765 43210";
 
       // If patient supplied their caregiver's email during registration
       if (caregiverEmail && caregiverEmail.trim()) {
         const cg = await User.findOne({ email: caregiverEmail.toLowerCase().trim(), role: "caregiver" });
         if (cg) {
           linkedCaregiverId = cg._id;
+          caregiverPhoneNum = cg.phone || "+91 98765 43210";
           linkedPartnerName = cg.name;
         }
       }
@@ -61,6 +69,7 @@ const register = async (req, res) => {
         name: user.name,
         age: 70,
         caregiverId: linkedCaregiverId,
+        caregiverPhone: caregiverPhoneNum,
         preferredLanguage: "English",
       });
     }
@@ -82,6 +91,7 @@ const register = async (req, res) => {
 
       if (patDoc) {
         patDoc.caregiverId = user._id;
+        patDoc.caregiverPhone = user.phone; // save caregiver's real phone for patient emergency calls
         await patDoc.save();
         linkedPartnerName = patDoc.name;
       }
@@ -91,13 +101,14 @@ const register = async (req, res) => {
 
     res.status(201).json({
       message: linkedPartnerName 
-        ? `Account created and successfully linked with ${linkedPartnerName}!` 
+        ? `Account created and linked with ${linkedPartnerName}!` 
         : "Account created successfully",
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     });
@@ -136,6 +147,7 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
       },
     });
@@ -153,6 +165,7 @@ const getMe = async (req, res) => {
       id: req.user._id,
       name: req.user.name,
       email: req.user.email,
+      phone: req.user.phone,
       role: req.user.role,
     },
   });

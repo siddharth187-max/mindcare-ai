@@ -72,11 +72,11 @@ const linkCaregiver = async (req, res) => {
         name: req.user.name,
         age: 70,
         caregiverId: caregiver._id,
-        caregiverPhone: caregiverPhone || "+91 98765 43210",
+        caregiverPhone: caregiver.phone || caregiverPhone || "+91 98765 43210",
       });
     } else {
       patient.caregiverId = caregiver._id;
-      if (caregiverPhone) patient.caregiverPhone = caregiverPhone;
+      patient.caregiverPhone = caregiver.phone || caregiverPhone || patient.caregiverPhone || "+91 98765 43210";
       await patient.save();
     }
 

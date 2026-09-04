@@ -1,6 +1,5 @@
 // models/User.js
 // Represents anyone who can log in: either a "patient" or a "caregiver".
-// Passwords are NEVER stored as plain text - see authController.js for hashing.
 
 const mongoose = require("mongoose");
 
@@ -16,6 +15,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
+  },
+  phone: {
+    type: String,
+    trim: true,
+    default: "+91 98765 43210",
   },
   password: {
     type: String,

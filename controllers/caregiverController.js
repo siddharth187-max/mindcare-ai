@@ -55,6 +55,7 @@ const linkPatient = async (req, res) => {
     }
 
     patientDoc.caregiverId = req.user._id;
+    patientDoc.caregiverPhone = req.user.phone || patientDoc.caregiverPhone || "+91 98765 43210";
     await patientDoc.save();
 
     res.status(200).json({

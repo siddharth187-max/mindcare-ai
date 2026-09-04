@@ -7,6 +7,7 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [role, setRole] = useState('patient');
   const [partnerIdentifier, setPartnerIdentifier] = useState('');
   const [error, setError] = useState('');
@@ -17,177 +18,235 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (role === 'caregiver' && !phone.trim()) {
+      setError('Caregivers must provide an emergency contact mobile number for patient safety.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const payload = {
-        name,
-        email,
+      const caregiverEmail = role === 'patient' ? partnerIdentifier.trim() : '';
+      const patientEmailOrCode = role === 'caregiver' ? partnerIdentifier.trim() : '';
+      const caregiverPhone = role === 'caregiver' ? phone.trim() : '';
+
+      const res = await register(
+        name.trim(),
+        email.trim(),
         password,
         role,
-        ...(role === 'patient' ? { caregiverEmail: partnerIdentifier } : { patientEmailOrCode: partnerIdentifier }),
-      };
+        caregiverPhone,
+        caregiverEmail,
+        patientEmailOrCode
+      );
 
-      const res = await register(payload.name, payload.email, payload.password, payload.role, payload.caregiverEmail, payload.patientEmailOrCode);
       const userRole = res?.role || res?.user?.role || role;
-      
       if (userRole === 'caregiver') {
         navigate('/caregiver');
       } else {
         navigate('/patient');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create account. Please try again.');
+      setError(err.response?.data?.message || 'Failed to initialize account. System rejected credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative overflow-hidden font-sans">
-      {/* Background Ambient Glow Orbs */}
-      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-purple-600/15 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-emerald-600/15 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 relative overflow-hidden font-mono selection:bg-purple-500 selection:text-white">
+      {/* Background Cyber Grid & Ambient Glows */}
+      <div 
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(168, 85, 247, 0.25) 1px, transparent 0)',
+          backgroundSize: '32px 32px'
+        }}
+      />
+      <div className="absolute top-1/4 -right-32 w-96 h-96 bg-purple-600/20 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 -left-32 w-96 h-96 bg-emerald-600/20 rounded-full blur-[140px] pointer-events-none"></div>
 
       <div className="flex-grow flex items-center justify-center p-4 sm:p-6 py-12 relative z-10">
-        <div className="bg-slate-900/90 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-[0_0_50px_rgba(147,51,234,0.15)] w-full max-w-lg mx-auto border border-purple-900/40 relative">
+        <div className="bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-10 rounded-2xl shadow-[0_0_60px_rgba(147,51,234,0.2)] w-full max-w-lg mx-auto border border-purple-500/30 relative">
           
+          {/* Cyber Terminal Top Bar */}
+          <div className="flex items-center justify-between border-b border-purple-900/60 pb-3 mb-6 text-xs text-purple-400">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="tracking-widest font-bold">[SYS_REGISTRATION_CORE]</span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-bold tracking-wider">SECURE_CHANNEL_v2.6</span>
+          </div>
+
+          {/* Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-emerald-500/20 text-4xl mb-3 border border-purple-500/30 shadow-inner">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-purple-500/10 text-3xl mb-2.5 border border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
               🌿
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-              Create Your Account
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wider uppercase">
+              MindCare <span className="text-purple-400 underline decoration-purple-500/60 decoration-2">Protocol</span>
             </h1>
-            <p className="text-sm sm:text-base text-purple-200/80 font-semibold mt-1">
-              Join MindCare AI for intelligent cognitive & routine support
+            <p className="text-xs sm:text-sm text-purple-300/80 font-medium mt-1 tracking-wide">
+              {'>'} Initializing Cognitive Neural Profile...
             </p>
           </div>
 
           {error && (
-            <div className="bg-rose-950/80 text-rose-200 p-4 rounded-2xl mb-6 text-sm font-bold border border-rose-500/50 flex items-start gap-2.5 shadow-md">
-              <span className="text-xl">⚠️</span>
-              <span>{error}</span>
+            <div className="bg-rose-950/80 text-rose-200 p-3.5 rounded-xl mb-6 text-xs font-bold border border-rose-500/60 flex items-start gap-2 shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+              <span className="text-base">⚠️</span>
+              <span className="leading-relaxed">{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Full Name */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-200 mb-1">
-                Full Name
+              <label className="block text-[11px] font-bold uppercase tracking-widest text-purple-300 mb-1">
+                [USER_LEGAL_NAME]
               </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 transition-all placeholder-slate-500 text-sm sm:text-base"
+                className="w-full px-4 py-2.5 rounded-lg border border-purple-900/60 bg-slate-950/80 text-white font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all placeholder-slate-600 shadow-inner"
                 placeholder="e.g. Arthur Pendelton"
               />
             </div>
 
+            {/* Email Address */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-200 mb-1">
-                Email Address
+              <label className="block text-[11px] font-bold uppercase tracking-widest text-purple-300 mb-1">
+                [SECURE_IDENTIFIER // EMAIL]
               </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 transition-all placeholder-slate-500 text-sm sm:text-base"
-                placeholder="name@example.com"
+                className="w-full px-4 py-2.5 rounded-lg border border-purple-900/60 bg-slate-950/80 text-white font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all placeholder-slate-600 shadow-inner"
+                placeholder="identity@mindcare.ai"
               />
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-200 mb-1">
-                Password
+              <label className="block text-[11px] font-bold uppercase tracking-widest text-purple-300 mb-1">
+                [ENCRYPTED_PASSKEY]
               </label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 transition-all placeholder-slate-500 text-sm sm:text-base"
-                placeholder="Choose a password (min 6 characters)"
+                className="w-full px-4 py-2.5 rounded-lg border border-purple-900/60 bg-slate-950/80 text-white font-mono text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all placeholder-slate-600 shadow-inner"
+                placeholder="•••••••••••• (min 6 chars)"
               />
             </div>
-            
+
+            {/* Role Selection */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-200 mb-2">
-                Select Your Role
+              <label className="block text-[11px] font-bold uppercase tracking-widest text-purple-300 mb-1.5">
+                [ASSIGN_PROTOCOL_ROLE]
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole('patient')}
-                  className={`py-3.5 px-4 rounded-xl font-black transition-all text-xs sm:text-sm flex flex-col items-center gap-1.5 border-2 ${
-                    role === 'patient' 
-                    ? 'border-purple-500 bg-purple-600/30 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]' 
-                    : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white'
+                  className={`py-3 px-3 rounded-lg font-bold transition-all text-xs flex flex-col items-center gap-1 border ${
+                    role === 'patient'
+                      ? 'border-purple-400 bg-purple-600/30 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]'
+                      : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white'
                   }`}
                 >
-                  <span className="text-2xl">👤</span>
-                  <span>Patient (Companion)</span>
+                  <span className="text-xl">👤</span>
+                  <span className="tracking-wide">PATIENT_MODE</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole('caregiver')}
-                  className={`py-3.5 px-4 rounded-xl font-black transition-all text-xs sm:text-sm flex flex-col items-center gap-1.5 border-2 ${
-                    role === 'caregiver' 
-                    ? 'border-blue-500 bg-blue-600/30 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]' 
-                    : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white'
+                  className={`py-3 px-3 rounded-lg font-bold transition-all text-xs flex flex-col items-center gap-1 border ${
+                    role === 'caregiver'
+                      ? 'border-blue-400 bg-blue-600/30 text-white shadow-[0_0_20px_rgba(59,130,246,0.35)]'
+                      : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white'
                   }`}
                 >
-                  <span className="text-2xl">🩺</span>
-                  <span>Caregiver (Monitor)</span>
+                  <span className="text-xl">🩺</span>
+                  <span className="tracking-wide">CAREGIVER_NODE</span>
                 </button>
               </div>
             </div>
 
-            {/* Optional Immediate Partner Linking Field */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-purple-900/40">
-              <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">
+            {/* ONLY CAREGIVERS ENTER PHONE NUMBER */}
+            {role === 'caregiver' && (
+              <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/50 animate-fadeIn">
+                <label className="block text-[11px] font-bold text-blue-300 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>[CAREGIVER_MOBILE_DISPATCH]</span>
+                  <span className="text-emerald-400 text-[10px] font-mono animate-pulse">● REQUIRED</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-lg border border-blue-500/40 bg-slate-950 text-white font-mono text-sm focus:outline-none focus:border-blue-300 shadow-inner"
+                  placeholder="+91 98765 43210"
+                />
+                <p className="text-[10px] text-blue-200/80 mt-1 font-sans">
+                  🚨 <strong className="text-blue-100">Patient Emergency Direct-Dial:</strong> Your patient will instantly call this registered number when tapping <strong>"📞 Call Caregiver"</strong>.
+                </p>
+              </div>
+            )}
+
+            {/* Partner Linking Field */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-purple-900/50">
+              <label className="block text-[11px] font-bold text-purple-300 uppercase tracking-widest mb-1">
                 {role === 'patient' 
-                  ? 'Caregiver Email (Optional - or connect later)' 
-                  : 'Patient Email or Pair Code (Optional - or connect later)'}
+                  ? '[CARE_PARTNER_LINK // OPTIONAL]' 
+                  : '[PATIENT_TELEMETRY_LINK // OPTIONAL]'}
               </label>
               <input
                 type="text"
                 value={partnerIdentifier}
                 onChange={(e) => setPartnerIdentifier(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs sm:text-sm font-medium focus:outline-none focus:border-purple-400 placeholder-slate-500"
-                placeholder={role === 'patient' ? 'e.g. caregiver@mindcare.local' : 'e.g. patient@mindcare.local or MC-1234'}
+                className="w-full px-3.5 py-2 rounded-lg border border-purple-900/60 bg-slate-900 text-white font-mono text-xs focus:outline-none focus:border-purple-400 placeholder-slate-600 shadow-inner"
+                placeholder={role === 'patient' ? 'caregiver@mindcare.ai (or leave blank)' : 'patient@mindcare.ai or MC-1234'}
               />
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[10px] text-slate-400 mt-1 font-sans leading-tight">
                 {role === 'patient' 
-                  ? 'If your caregiver already registered, enter their email to link immediately.' 
-                  : 'Enter patient email or 6-digit pair code to link them right away.'}
+                  ? 'Enter caregiver email to immediately link emergency alerts & contact numbers.' 
+                  : 'Enter patient email or pair code to instantly attach your emergency phone to their dashboard.'}
               </p>
             </div>
-            
+
+            {/* Submit Action */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full min-h-14 bg-gradient-to-r from-emerald-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white text-lg font-black py-3.5 px-6 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all active:scale-98 mt-3 flex items-center justify-center gap-2"
+              className="w-full min-h-12 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:opacity-90 text-white text-sm font-bold tracking-widest uppercase py-3 px-4 rounded-lg shadow-[0_0_25px_rgba(147,51,234,0.35)] transition-all active:scale-98 mt-2 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <span className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>Creating Account...</span>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>INITIALIZING_PROFILE...</span>
                 </>
               ) : (
                 <>
-                  <span>Create Account & Start</span>
-                  <span className="text-xl">➔</span>
+                  <span>[EXECUTE_REGISTRATION]</span>
+                  <span>➔</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-purple-900/40 text-center">
-            <Link to="/login" className="text-sm sm:text-base text-purple-300 hover:text-white font-extrabold underline underline-offset-4 transition-colors">
-              Already have an account? Sign in →
+          {/* Login Switch */}
+          <div className="mt-5 pt-4 border-t border-purple-900/50 text-center">
+            <Link 
+              to="/login" 
+              className="text-xs text-purple-300 hover:text-white font-bold tracking-wider uppercase underline underline-offset-4 transition-colors"
+            >
+              {'>'} EXISTING_OPERATOR? SIGN_IN_HERE
             </Link>
           </div>
         </div>
