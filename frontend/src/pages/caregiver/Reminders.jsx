@@ -1,19 +1,38 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import api from '../../api/axios';
 
 const Reminders = () => {
+  const { darkMode } = useOutletContext() || {};
   const [patientId, setPatientId] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'completed', 'missed'
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: '', scheduledTime: '' });
+  
+  // Default scheduled time to today + 1 hour
+  const getDefaultTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0);
+    return now.toISOString().slice(0, 16);
+  };
+
+  const [form, setForm] = useState({ title: '', scheduledTime: getDefaultTime() });
 
   const fetchReminders = async (pid) => {
     try {
-      const res = await api.get(`/reminders/pending/${pid}`);
+      const res = await api.get(`/reminders/patient/${pid}`);
       setReminders(res.data.reminders || res.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading reminders:", err);
+      // Fallback to pending
+      try {
+        const pRes = await api.get(`/reminders/pending/${pid}`);
+        setReminders(pRes.data.reminders || pRes.data || []);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -38,83 +57,234 @@ const Reminders = () => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    if (!form.title || !form.scheduledTime) return;
+
     try {
-      await api.post('/reminders', { ...form, patientId });
+      await api.post('/reminders', {
+        title: form.title,
+        scheduledTime: form.scheduledTime,
+        patientId
+      });
       setShowModal(false);
-      setForm({ title: '', scheduledTime: '' });
-      fetchReminders(patientId);
+      setForm({ title: '', scheduledTime: getDefaultTime() });
+      await fetchReminders(patientId);
     } catch (err) {
-      console.error(err);
+      console.error("Error creating reminder:", err);
+      alert(err.response?.data?.message || "Failed to create reminder.");
     }
   };
 
   const handleComplete = async (id) => {
     try {
       await api.patch(`/reminders/${id}/complete`);
-      fetchReminders(patientId);
+      await fetchReminders(patientId);
     } catch (err) {
-      console.error(err);
+      console.error("Error completing reminder:", err);
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading reminders...</div>;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this reminder?")) return;
+    try {
+      await api.delete(`/reminders/${id}`);
+      await fetchReminders(patientId);
+    } catch (err) {
+      console.error("Error deleting reminder:", err);
+    }
+  };
+
+  const filteredReminders = reminders.filter(r => {
+    if (filter === 'pending') return r.status === 'pending';
+    if (filter === 'completed') return r.status === 'completed';
+    if (filter === 'missed') return r.status === 'missed';
+    return true;
+  });
+
+  const cardStyle = darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900 shadow-sm';
+  const subTextStyle = darkMode ? 'text-slate-400' : 'text-slate-500';
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
+        <span className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+        <span className="text-lg font-bold">Loading patient reminders...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center border-b border-gray-200 pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Active Reminders</h2>
+    <div className="space-y-6 max-w-6xl mx-auto animate-fadeIn pb-16">
+      {/* Top Header & Create Button */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/40 pb-4">
+        <div>
+          <h2 className={`text-2xl sm:text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            Care Reminders & Scheduled Alerts
+          </h2>
+          <p className={`text-sm font-medium ${subTextStyle} mt-0.5`}>
+            Schedule medication alerts, hydration reminders, and family check-ins for the patient.
+          </p>
+        </div>
+
         <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm text-sm"
+          onClick={() => {
+            setForm({ title: '', scheduledTime: getDefaultTime() });
+            setShowModal(true);
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm flex items-center gap-2"
         >
-          + Create Reminder
+          <span>+</span>
+          <span>Create New Reminder</span>
         </button>
       </div>
 
+      {/* Filter Tabs & Counter */}
+      <div className="flex flex-wrap justify-between items-center gap-4">
+        <div className={`flex rounded-xl p-1 border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+          {[
+            { key: 'all', label: 'All', count: reminders.length },
+            { key: 'pending', label: 'Active', count: reminders.filter(r => r.status === 'pending').length },
+            { key: 'completed', label: 'Completed', count: reminders.filter(r => r.status === 'completed').length },
+            { key: 'missed', label: 'Overdue / Missed', count: reminders.filter(r => r.status === 'missed').length },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+                filter === tab.key
+                ? 'bg-blue-600 text-white shadow-sm'
+                : darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-xs ${
+                filter === tab.key ? 'bg-blue-800 text-white' : 'bg-slate-800/40 opacity-75'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reminder Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {reminders.length > 0 ? (
-          reminders.map(rem => (
-            <div key={rem._id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">{rem.title}</h4>
-                <p className="text-sm text-gray-600 mb-6 flex items-center gap-2">
-                  <span className="text-lg">⏰</span>
-                  {new Date(rem.scheduledTime).toLocaleString()}
-                </p>
-              </div>
-              <button
-                onClick={() => handleComplete(rem._id)}
-                className="w-full bg-green-50 text-green-700 py-2 rounded-md font-medium hover:bg-green-100 transition border border-green-200 text-sm"
+        {filteredReminders.length > 0 ? (
+          filteredReminders.map(rem => {
+            const isCompleted = rem.status === 'completed';
+            const isMissed = rem.status === 'missed';
+            const dateObj = new Date(rem.scheduledTime);
+            const dateStr = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return (
+              <div 
+                key={rem._id} 
+                className={`p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${cardStyle} ${
+                  isCompleted 
+                  ? 'border-emerald-500/30' 
+                  : isMissed 
+                  ? 'border-rose-500/30' 
+                  : 'border-blue-500/30 hover:border-blue-500/50'
+                }`}
               >
-                Mark Complete
-              </button>
-            </div>
-          ))
+                <div>
+                  <div className="flex justify-between items-start mb-3">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase border ${
+                      isCompleted 
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                      : isMissed 
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                      : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    }`}>
+                      {rem.status}
+                    </span>
+
+                    <button 
+                      onClick={() => handleDelete(rem._id)}
+                      className="text-slate-400 hover:text-rose-400 text-lg px-1 transition-colors"
+                      title="Delete reminder"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <h4 className="text-lg font-bold mb-2 text-white">{rem.title}</h4>
+                  <p className={`text-sm ${subTextStyle} mb-6 flex items-center gap-1.5 font-medium`}>
+                    <span>⏰</span>
+                    <span>{dateStr} at {timeStr}</span>
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800/60 flex gap-2">
+                  {!isCompleted && (
+                    <button
+                      onClick={() => handleComplete(rem._id)}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-3 rounded-xl font-bold transition text-xs shadow-sm active:scale-95"
+                    >
+                      ✓ Mark Completed
+                    </button>
+                  )}
+                  {isCompleted && (
+                    <span className="text-xs text-emerald-400 font-bold py-2 flex items-center gap-1">
+                      <span>✅</span> Completed {rem.completedAt ? new Date(rem.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })
         ) : (
-          <div className="col-span-full p-12 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
-            <div className="text-3xl mb-3">🕰️</div>
-            <p className="text-lg font-medium text-gray-900">No active reminders</p>
-            <p className="text-sm">Create a new reminder to notify the patient.</p>
+          <div className="col-span-full p-12 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
+            <div className="text-4xl mb-3">⏰</div>
+            <p className="text-lg font-bold text-slate-300">No {filter !== 'all' ? filter : ''} reminders found</p>
+            <p className="text-sm text-slate-500 mt-1">Click "+ Create New Reminder" above to set a timed reminder for the patient.</p>
           </div>
         )}
       </div>
 
+      {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-            <h3 className="text-xl font-bold mb-4 text-gray-900">Create New Reminder</h3>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-xl font-extrabold mb-1">Create Patient Reminder</h3>
+            <p className="text-xs text-slate-400 mb-4">This reminder will be broadcast directly to the patient's companion view.</p>
+            
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Reminder Content</label>
-                <input required type="text" placeholder="e.g. Call grandson" className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500 outline-none" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Reminder Title</label>
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="e.g. Take Blood Pressure Medication" 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-300'}`} 
+                  value={form.title} 
+                  onChange={e => setForm({...form, title: e.target.value})} 
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">Date & Time</label>
-                <input required type="datetime-local" className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500 outline-none" value={form.scheduledTime} onChange={e => setForm({...form, scheduledTime: e.target.value})} />
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Scheduled Date & Time</label>
+                <input 
+                  required 
+                  type="datetime-local" 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-300'}`} 
+                  value={form.scheduledTime} 
+                  onChange={e => setForm({...form, scheduledTime: e.target.value})} 
+                />
               </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 font-medium transition">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition shadow-sm">Save Reminder</button>
+              <div className="flex justify-end gap-3 mt-6 pt-3 border-t border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)} 
+                  className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-md transition-all active:scale-95 text-sm"
+                >
+                  Save & Broadcast Reminder
+                </button>
               </div>
             </form>
           </div>

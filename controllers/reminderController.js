@@ -1,8 +1,4 @@
 // controllers/reminderController.js
-// A simple reminder tracker: create reminders, mark them completed/missed,
-// and fetch pending/missed ones. No push notifications yet - the frontend
-// is expected to poll these endpoints.
-
 const Reminder = require("../models/Reminder");
 const Patient = require("../models/Patient");
 
@@ -36,12 +32,31 @@ const createReminder = async (req, res) => {
       patientId,
       routineId,
       title,
-      scheduledTime,
+      scheduledTime: new Date(scheduledTime),
+      status: "pending",
     });
 
     res.status(201).json({ message: "Reminder created", reminder });
   } catch (error) {
     res.status(500).json({ message: "Server error creating reminder", error: error.message });
+  }
+};
+
+// @route  GET /api/reminders/patient/:patientId
+// @desc   Get ALL reminders for a patient (pending, completed, missed)
+// @access Private
+const getAllReminders = async (req, res) => {
+  try {
+    const access = await assertAccessToPatient(req.params.patientId, req.user);
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    const reminders = await Reminder.find({
+      patientId: req.params.patientId,
+    }).sort({ scheduledTime: -1 });
+
+    res.status(200).json({ count: reminders.length, reminders });
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching all reminders", error: error.message });
   }
 };
 
@@ -53,11 +68,11 @@ const getPendingReminders = async (req, res) => {
     const access = await assertAccessToPatient(req.params.patientId, req.user);
     if (!access.ok) return res.status(access.status).json({ message: access.message });
 
-    // Before returning, auto-flag any pending reminder whose time has
-    // already passed as "missed" - keeps the data honest without needing
-    // a background job.
+    // Only mark reminders as missed if they were scheduled more than 24 hours ago
+    // This allows patients and caregivers to still view and complete reminders scheduled for today
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     await Reminder.updateMany(
-      { patientId: req.params.patientId, status: "pending", scheduledTime: { $lt: new Date() } },
+      { patientId: req.params.patientId, status: "pending", scheduledTime: { $lt: oneDayAgo } },
       { $set: { status: "missed" } }
     );
 
@@ -112,4 +127,29 @@ const completeReminder = async (req, res) => {
   }
 };
 
-module.exports = { createReminder, getPendingReminders, getMissedReminders, completeReminder };
+// @route  DELETE /api/reminders/:id
+// @desc   Delete a reminder
+// @access Private
+const deleteReminder = async (req, res) => {
+  try {
+    const reminder = await Reminder.findById(req.params.id);
+    if (!reminder) return res.status(404).json({ message: "Reminder not found" });
+
+    const access = await assertAccessToPatient(reminder.patientId, req.user);
+    if (!access.ok) return res.status(access.status).json({ message: access.message });
+
+    await Reminder.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Reminder deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error deleting reminder", error: error.message });
+  }
+};
+
+module.exports = {
+  createReminder,
+  getAllReminders,
+  getPendingReminders,
+  getMissedReminders,
+  completeReminder,
+  deleteReminder,
+};

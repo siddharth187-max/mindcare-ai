@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 const Dashboard = () => {
   const { user } = useAuth();
   const [patient, setPatient] = useState(null);
+  const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
   const outletCtx = useOutletContext() || {};
@@ -16,11 +17,28 @@ const Dashboard = () => {
   const { speak } = useVoice();
   const [isSpeakingState, setIsSpeakingState] = useState(false);
 
+  const fetchReminders = async (pId) => {
+    if (!pId) return;
+    try {
+      const res = await api.get(`/reminders/pending/${pId}`);
+      setReminders(res.data.reminders || []);
+    } catch (e) {
+      console.error("Error fetching patient reminders:", e);
+    }
+  };
+
   useEffect(() => {
+    let patientId = null;
+
     const fetchPatient = async () => {
       try {
         const res = await api.get('/patients/me');
-        setPatient(res.data.patient || res.data);
+        const pat = res.data.patient || res.data;
+        setPatient(pat);
+        if (pat && (pat._id || pat.id)) {
+          patientId = pat._id || pat.id;
+          fetchReminders(patientId);
+        }
       } catch (err) {
         console.error('Error fetching patient profile:', err);
       } finally {
@@ -30,8 +48,28 @@ const Dashboard = () => {
     fetchPatient();
 
     const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    // Poll reminders every 20 seconds
+    const reminderPoll = setInterval(() => {
+      if (patientId) fetchReminders(patientId);
+    }, 20000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(reminderPoll);
+    };
   }, []);
+
+  const handleCompleteReminder = async (rem) => {
+    try {
+      await api.patch(`/reminders/${rem._id}/complete`);
+      if (soundEnabled) {
+        speak(`Thank you for completing your reminder: ${rem.title}`);
+      }
+      setReminders(prev => prev.filter(r => r._id !== rem._id));
+    } catch (e) {
+      console.error("Error completing reminder:", e);
+    }
+  };
 
   const getPeriod = (hour) => {
     if (hour >= 5 && hour < 12) return { name: 'Morning', icon: '🌅', color: 'from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30' };
@@ -118,6 +156,68 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* ACTIVE REMINDERS SECTION (If any exist) */}
+      {reminders.length > 0 && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.2)] animate-pulseMatch">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="text-3xl animate-bounce">🔔</span>
+              <div>
+                <h3 className="text-2xl font-extrabold text-amber-300">Active Care Reminders</h3>
+                <p className="text-xs text-amber-200/80 font-bold">Scheduled by your caregiver</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-black">
+              {reminders.length} PENDING
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {reminders.map(rem => {
+              const d = new Date(rem.scheduledTime);
+              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+              return (
+                <div 
+                  key={rem._id}
+                  className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-amber-500/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl flex-shrink-0">
+                      ⏰
+                    </div>
+                    <div>
+                      <h4 className="text-xl sm:text-2xl font-black text-white">{rem.title}</h4>
+                      <p className="text-sm font-bold text-amber-300">Scheduled for {dateStr} at {timeStr}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5 w-full sm:w-auto justify-end">
+                    {soundEnabled && (
+                      <button
+                        onClick={() => speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`)}
+                        className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xl active:scale-95"
+                        title="Read aloud"
+                      >
+                        🔊
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleCompleteReminder(rem)}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-base shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>✓</span>
+                      <span>I Did This</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Quick Action Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -99,6 +99,7 @@ const completeRoutineItem = async (req, res) => {
     if (!access.ok) return res.status(access.status).json({ message: access.message });
 
     routine.completed = true;
+    routine.completedAt = new Date();
     await routine.save();
 
     res.status(200).json({ message: "Routine item marked as completed", routine });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../../api/axios';
 import {
@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('routines'); // 'routines' or 'reminders'
 
   // Modals state
   const [showRoutineModal, setShowRoutineModal] = useState(false);
@@ -30,10 +31,20 @@ const Dashboard = () => {
     scheduledTime: '',
     category: 'other',
   });
+
+  const getDefaultReminderTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0);
+    return now.toISOString().slice(0, 16);
+  };
+
   const [reminderForm, setReminderForm] = useState({
     title: '',
-    scheduledTime: '',
+    scheduledTime: getDefaultReminderTime(),
   });
+
+  const lastActivityCount = useRef(0);
 
   const fetchPatients = async () => {
     try {
@@ -52,15 +63,17 @@ const Dashboard = () => {
     }
   };
 
-  const fetchDashboardData = async (patientId) => {
+  const fetchDashboardData = async (patientId, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get(`/caregiver/dashboard/${patientId}`);
       setDashboardData(response.data);
-      setLoading(false);
+      if (!silent) setLoading(false);
     } catch (err) {
-      setError('Failed to load dashboard data.');
-      setLoading(false);
+      if (!silent) {
+        setError('Failed to load dashboard data.');
+        setLoading(false);
+      }
     }
   };
 
@@ -68,9 +81,14 @@ const Dashboard = () => {
     fetchPatients();
   }, []);
 
+  // Poll for real-time live telemetry every 8 seconds
   useEffect(() => {
     if (selectedPatientId) {
       fetchDashboardData(selectedPatientId);
+      const interval = setInterval(() => {
+        fetchDashboardData(selectedPatientId, true);
+      }, 8000);
+      return () => clearInterval(interval);
     }
   }, [selectedPatientId]);
 
@@ -79,7 +97,7 @@ const Dashboard = () => {
     try {
       await api.post('/routines', { ...routineForm, patientId: selectedPatientId });
       setShowRoutineModal(false);
-      fetchDashboardData(selectedPatientId);
+      fetchDashboardData(selectedPatientId, true);
       setRoutineForm({ title: '', description: '', scheduledTime: '', category: 'other' });
     } catch (err) {
       console.error(err);
@@ -91,7 +109,8 @@ const Dashboard = () => {
     try {
       await api.post('/reminders', { ...reminderForm, patientId: selectedPatientId });
       setShowReminderModal(false);
-      setReminderForm({ title: '', scheduledTime: '' });
+      setReminderForm({ title: '', scheduledTime: getDefaultReminderTime() });
+      fetchDashboardData(selectedPatientId, true);
     } catch (err) {
       console.error(err);
     }
@@ -101,7 +120,17 @@ const Dashboard = () => {
     if (!window.confirm('Delete this routine?')) return;
     try {
       await api.delete(`/routines/${id}`);
-      fetchDashboardData(selectedPatientId);
+      fetchDashboardData(selectedPatientId, true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteReminder = async (id) => {
+    if (!window.confirm('Delete this reminder?')) return;
+    try {
+      await api.delete(`/reminders/${id}`);
+      fetchDashboardData(selectedPatientId, true);
     } catch (err) {
       console.error(err);
     }
@@ -110,37 +139,40 @@ const Dashboard = () => {
   const cardStyle = darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-100 text-slate-900 shadow-sm';
   const subTextStyle = darkMode ? 'text-slate-400' : 'text-slate-500';
 
-  if (loading) return (
+  if (loading && !dashboardData) return (
     <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
       <span className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
       <span className="text-lg font-bold">Connecting to patient telemetry stream...</span>
     </div>
   );
   
-  if (error) return <div className="p-8 text-center text-red-500 font-bold">{error}</div>;
+  if (error && !dashboardData) return <div className="p-8 text-center text-red-500 font-bold">{error}</div>;
   if (!patients.length) return <div className="p-8 text-center text-slate-500">No patients assigned to you yet.</div>;
   if (!dashboardData) return null;
 
   const patient = dashboardData.patient || {};
   const stats = dashboardData.stats || {};
   const todayRoutines = dashboardData.todaysRoutine || dashboardData.todayRoutines || [];
+  const activeReminders = dashboardData.activeReminders || [];
+  const recentActivity = dashboardData.recentActivity || [];
   const completedCount = dashboardData.completedActivities?.length || todayRoutines.filter(r => r.completed).length;
   const adherence = todayRoutines.length > 0 ? `${Math.round((completedCount / todayRoutines.length) * 100)}%` : '0%';
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
-      {/* Top Patient Header */}
+    <div className="space-y-6 animate-fadeIn pb-16">
+      {/* Top Patient Header with Live Telemetry Pulse */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <h2 className={`text-2xl sm:text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {patient?.name}'s Telemetry
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-              ● Monitored
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              Live Sync Active
             </span>
           </div>
-          {patient?.age && <p className={`text-sm font-semibold ${subTextStyle} mt-0.5`}>Age: {patient.age} • Care Profile Active</p>}
+          {patient?.age && <p className={`text-sm font-semibold ${subTextStyle} mt-0.5`}>Age: {patient.age} • Care Profile Monitored 24/7</p>}
         </div>
 
         {patients.length > 1 && (
@@ -181,15 +213,77 @@ const Dashboard = () => {
         </div>
 
         <div className={`p-5 rounded-2xl border ${cardStyle}`}>
-          <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${subTextStyle}`}>Adaptive Engine</p>
-          <p className="text-2xl font-extrabold text-amber-500 uppercase tracking-wider mt-1">
-            {stats?.currentDifficulty || 'EASY'}
-          </p>
-          <span className="text-xs text-slate-400 mt-1 block">Active Scaling</span>
+          <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${subTextStyle}`}>Active Reminders</p>
+          <p className="text-3xl font-extrabold text-amber-500">{activeReminders.length}</p>
+          <span className="text-xs text-slate-400 mt-1 block">Scheduled for Patient</span>
         </div>
       </div>
 
-      {/* Charts & Routine Side-by-Side */}
+      {/* 🔴 LIVE PATIENT ACTIVITY & TELEMETRY STREAM (Patient Working Notifications) */}
+      <div className={`p-6 rounded-3xl border ${cardStyle} shadow-[0_0_30px_rgba(59,130,246,0.1)]`}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl animate-pulse">📡</span>
+            <div>
+              <h3 className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+                Live Patient Activity Feed
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">
+                  Auto-Refreshing
+                </span>
+              </h3>
+              <p className={`text-xs ${subTextStyle}`}>Real-time notifications whenever {patient?.name || 'patient'} completes tasks, plays games, or acknowledges reminders</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+          {recentActivity.length > 0 ? (
+            recentActivity.map((act) => {
+              const timeStr = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const dateStr = new Date(act.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+              return (
+                <div 
+                  key={act.id} 
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
+                    darkMode ? 'bg-slate-950/70 border-slate-800 hover:border-slate-700' : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className="text-3xl p-2 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">{act.icon}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-extrabold text-sm sm:text-base text-white">{act.title}</p>
+                        <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                          act.badgeColor === 'emerald' 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                          : act.badgeColor === 'purple' 
+                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' 
+                          : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                        }`}>
+                          {act.badge}
+                        </span>
+                      </div>
+                      <p className={`text-xs ${subTextStyle} mt-0.5`}>{act.detail}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-slate-400 self-end sm:self-auto bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                    ⏱️ {dateStr} at {timeStr}
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <span className="text-3xl block mb-2">⏳</span>
+              <p className="text-sm font-bold text-slate-400">Waiting for patient activities...</p>
+              <p className="text-xs text-slate-500 mt-1">When {patient?.name || 'patient'} completes a routine, plays games, or marks a reminder, it will appear here in real time!</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Charts & Routine / Reminders Side-by-Side */}
       <div className="grid md:grid-cols-2 gap-6">
         
         {/* 7-Day Trend Chart */}
@@ -223,59 +317,114 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Today's Routines */}
+        {/* Tabbed Routines & Reminders Management */}
         <div className={`p-6 rounded-2xl border flex flex-col ${cardStyle}`}>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">Today's Routine Checklist</h3>
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setActiveTab('routines')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'routines' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                📋 Routines ({todayRoutines.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('reminders')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === 'reminders' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ⏰ Reminders ({activeReminders.length})
+              </button>
+            </div>
+
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowReminderModal(true)}
-                className="text-xs bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 px-3 py-1.5 rounded-xl font-bold transition-colors"
-              >
-                + Reminder
-              </button>
-              <button
-                onClick={() => setShowRoutineModal(true)}
-                className="text-xs bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 px-3 py-1.5 rounded-xl font-bold transition-colors"
-              >
-                + Routine
-              </button>
+              {activeTab === 'reminders' ? (
+                <button
+                  onClick={() => setShowReminderModal(true)}
+                  className="text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl font-bold transition-colors border border-amber-500/30"
+                >
+                  + Add Reminder
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowRoutineModal(true)}
+                  className="text-xs bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-xl font-bold transition-colors border border-blue-500/30"
+                >
+                  + Add Routine
+                </button>
+              )}
             </div>
           </div>
           
           <div className="flex-1 overflow-y-auto max-h-64 space-y-2.5 pr-1">
-            {todayRoutines?.length > 0 ? (
-              todayRoutines.map((routine) => (
-                <div 
-                  key={routine._id} 
-                  className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
-                    darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
-                  }`}
-                >
-                  <div>
-                    <p className="font-bold text-sm">{routine.title}</p>
-                    <p className={`text-xs ${subTextStyle}`}>
-                      ⏰ {routine.scheduledTime} • <span className="capitalize">{routine.category}</span>
-                    </p>
+            {activeTab === 'routines' ? (
+              todayRoutines?.length > 0 ? (
+                todayRoutines.map((routine) => (
+                  <div 
+                    key={routine._id} 
+                    className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
+                      darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-bold text-sm text-white">{routine.title}</p>
+                      <p className={`text-xs ${subTextStyle}`}>
+                        ⏰ {routine.scheduledTime} • <span className="capitalize">{routine.category}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      {routine.completed ? (
+                        <span className="text-xs font-bold bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Done</span>
+                      ) : (
+                        <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">Pending</span>
+                      )}
+                      <button 
+                        onClick={() => handleDeleteRoutine(routine._id)} 
+                        className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
+                        title="Delete routine"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    {routine.completed ? (
-                      <span className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Done</span>
-                    ) : (
-                      <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-2.5 py-0.5 rounded-full border border-amber-500/20">Pending</span>
-                    )}
-                    <button 
-                      onClick={() => handleDeleteRoutine(routine._id)} 
-                      className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
-                      title="Delete routine"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))
+              ) : (
+                <p className="text-slate-400 text-center py-8 text-sm">No routines scheduled for today.</p>
+              )
             ) : (
-              <p className="text-slate-400 text-center py-8 text-sm">No routines scheduled for today.</p>
+              activeReminders?.length > 0 ? (
+                activeReminders.map((rem) => (
+                  <div 
+                    key={rem._id} 
+                    className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
+                      darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-bold text-sm text-white">{rem.title}</p>
+                      <p className={`text-xs ${subTextStyle}`}>
+                        ⏰ {new Date(rem.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(rem.scheduledTime).toLocaleDateString([], { month: 'short', day: 'numeric' })})
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                        {rem.status}
+                      </span>
+                      <button 
+                        onClick={() => handleDeleteReminder(rem._id)} 
+                        className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
+                        title="Delete reminder"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-400 text-center py-8 text-sm">No active reminders. Click "+ Add Reminder" above.</p>
+              )
             )}
           </div>
         </div>
@@ -292,7 +441,7 @@ const Dashboard = () => {
                 <input 
                   required 
                   type="text" 
-                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                   placeholder="e.g. Afternoon Walk" 
                   value={routineForm.title} 
                   onChange={e => setRoutineForm({...routineForm, title: e.target.value})} 
@@ -301,7 +450,7 @@ const Dashboard = () => {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Description</label>
                 <textarea 
-                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                   placeholder="Brief note or instructions" 
                   value={routineForm.description} 
                   onChange={e => setRoutineForm({...routineForm, description: e.target.value})} 
@@ -313,7 +462,7 @@ const Dashboard = () => {
                   <input 
                     required 
                     type="time" 
-                    className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                    className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                     value={routineForm.scheduledTime} 
                     onChange={e => setRoutineForm({...routineForm, scheduledTime: e.target.value})} 
                   />
@@ -321,7 +470,7 @@ const Dashboard = () => {
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Category</label>
                   <select 
-                    className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                    className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                     value={routineForm.category} 
                     onChange={e => setRoutineForm({...routineForm, category: e.target.value})}
                   >
@@ -348,14 +497,15 @@ const Dashboard = () => {
       {showReminderModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}>
-            <h3 className="text-xl font-extrabold mb-4">Add Safety Reminder</h3>
+            <h3 className="text-xl font-extrabold mb-1">Add Safety Reminder</h3>
+            <p className="text-xs text-slate-400 mb-4">Broadcasts directly to patient companion view</p>
             <form onSubmit={handleAddReminder} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Reminder Title</label>
                 <input 
                   required 
                   type="text" 
-                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                   placeholder="e.g. Drink warm herbal tea" 
                   value={reminderForm.title} 
                   onChange={e => setReminderForm({...reminderForm, title: e.target.value})} 
@@ -366,14 +516,14 @@ const Dashboard = () => {
                 <input 
                   required 
                   type="datetime-local" 
-                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`w-full border p-3 rounded-xl font-medium outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`} 
                   value={reminderForm.scheduledTime} 
                   onChange={e => setReminderForm({...reminderForm, scheduledTime: e.target.value})} 
                 />
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-3 border-t border-slate-700/50">
                 <button type="button" onClick={() => setShowReminderModal(false)} className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors">Cancel</button>
-                <button type="submit" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-all active:scale-95">Save Reminder</button>
+                <button type="submit" className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold shadow-md transition-all active:scale-95">Save & Broadcast</button>
               </div>
             </form>
           </div>

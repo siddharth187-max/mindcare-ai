@@ -1,88 +1,125 @@
-﻿# 🌿 MindCare — Dementia Cognitive & Daily Routine Platform
-> Cognitive stimulation, daily routine tracking, and caregiver assistance platform designed specifically for individuals living with dementia, Alzheimer's, or mild cognitive impairment (SIH 2026 Project).
+# 🌿 MindCare AI — Adaptive Cognitive Companion & Clinical Telemetry Platform
+
+[![Deploy to Render](https://img.shields.io/badge/Render-Deployed%20Live-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://mindcare-ai.onrender.com)
+[![React](https://img.shields.io/badge/React%2018-Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js%2018-Express-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas%20Cloud-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-Cyber%20Obsidian-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![SIH Prototype](https://img.shields.io/badge/SIH%202026-Problem%20SIH26003-FF9900?style=for-the-badge&logo=google-cloud&logoColor=white)]()
+
+> **MindCare AI** is an intelligent full-stack assistive health prototype developed for **Smart India Hackathon (SIH26003)**. It bridges dementia patient daily support with real-time caregiver clinical monitoring using adaptive cognitive reinforcement, ambient orientation, voice synthesis, and telemetry tracking.
 
 ---
 
-## 🌟 Highlights & Dementia-Friendly Features
+## 🚀 Live Demo & Evaluation Access
 
-1. **Accessibility First (Dementia-Optimized UX)**:
-   - **Calming Visual Theme**: Warm linen and sage green tones that minimize agitation and sensory overload.
-   - **High-Contrast 1-Tap Toggle**: Ultra-high contrast dark mode (`#121212` with pure white text and vibrant accents) for elderly individuals with cataracts or low vision.
-   - **Multi-Level Font Scaler**: Instant `A-`, `A`, and `A+` buttons to scale typography up to 140%.
-   - **Extra-Large Tactile Touch Targets**: Buttons and routine cards are at least 54px high with rounded corners and distinct elevation.
+- 🌐 **Live Website**: [https://mindcare-ai-5mff.onrender.com](https://mindcare-ai-5mff.onrender.com) *(or your deployed Render link)*
+- ⚡ **1-Click Demo Login**: The login page includes quick-fill buttons for both Patient and Caregiver test accounts.
 
-2. **Temporal & Spatial Orientation**:
-   - **Live Clock & Date**: Large digital time display with full day-of-week and month representation.
-   - **Day Period Indicator**: Automatically identifies 🌅 Morning, ☀️ Afternoon, 🌆 Evening, or 🌙 Night to mitigate *sundowning* confusion.
-   - **Reassurance Card**: *"You are safe at home"* reassurance message.
-   - **Caregiver Quick Bar**: Displays active caregiver on duty with a 1-tap call button.
-
-3. **Audio Assistance & Voice Narration**:
-   - **Text-to-Speech (TTS)**: Built-in Web Speech API reads out routine instructions, daily orientations, and game prompts aloud.
-   - **Gentle Acoustic Feedback**: Synthesized harmonious chime chords (Web Audio API) for completed activities with celebratory confetti.
-
-4. **Interactive Cognitive Suite (4 Games)**:
-   - **Memory Card Match**: Pairs familiar everyday items (apples, flowers, teacups, clocks) with adaptive deck sizing.
-   - **Melody & Pattern Chimes**: Calming Simon-style musical chimes to stimulate working memory.
-   - **Everyday Object Quiz**: Matching household items with their functional purpose.
-   - **Daily Steps in Order**: Procedural memory game arranging steps like making tea or washing hands.
-   - **Adaptive Difficulty**: Automatic real-time difficulty calculation (`accuracy >= 80% -> Level Up`, `< 50% -> Level Down`).
-
-5. **Caregiver Monitoring Portal**:
-   - **Routine Adherence Rate**: Real-time progress bar of completed vs pending activities.
-   - **Cognitive Trend Analytics**: 7-day visual chart tracking patient accuracy and session scores.
-   - **Management Tools**: Add and delete routine tasks, configure reminder alerts.
-   - **Instant View Switcher**: Easily switch between Caregiver Portal and Patient View.
+| Role | Demo Email | Password | Primary Interface |
+|---|---|---|---|
+| **👤 Patient (Elderly)** | `patient.demo@mindcare.local` | `MindCareDemo123!` | Ambient Clock, Routine Checklist, 4 Brain Games |
+| **🩺 Caregiver (Clinician)** | `caregiver.demo@mindcare.local` | `MindCareDemo123!` | Telemetry Dashboard, Recharts Analytics, Routine Management |
 
 ---
 
-## 🚀 How to Run the Application
+## ✨ Key Features
 
-### Option 1: 1-Click Batch Runner (Windows)
-Double-click `run-mindcare.bat` in this folder. It will:
-1. Start the server on `http://localhost:5000`
-2. Automatically launch the application in your default web browser
+### 👤 1. Patient Companion Portal (Midnight Obsidian & Cyber-Purple)
+- **🕰️ Ambient Orientation HUD**: Live digital clock with dynamic time-period detection (`🌅 Morning`, `☀️ Afternoon`, `🌆 Evening`, `🌙 Night`) and anxiety-reducing home safety reassurance.
+- **📋 Interactive Daily Routine Checklist**: Time-filtered activity checklists with Web Speech TTS read-aloud, instant completion confirmation, and celebratory confetti animations.
+- **🚨 One-Touch Emergency Anchor**: Reassurance modal displaying caregiver contact details and home location coordinates.
+- **♿ Senior-Friendly Accessibility**: On-the-fly font size adjustment (A- / A / A+) and Cyber-Glow High Contrast mode.
 
-### Option 2: Terminal / Command Line
-```powershell
-# Navigate to the folder
-cd mindcare-backend
+### 🧠 2. Adaptive Cognitive Gaming Suite
+- **🃏 Memory Card Match**: Visual recognition exercise with 3D flip animations and adaptive difficulty scaling.
+- **🎵 Melody & Pattern Chimes**: Simon-style audio pattern memory utilizing browser Web Audio API sine-wave synthesizer.
+- **🔍 Everyday Object Quiz**: Object identification quiz targeting daily recognition and functional cognitive retention.
+- **📝 Daily Steps in Order**: Procedural memory sequencing task for familiar daily routines (e.g. making tea, bedtime prep).
+- **🤖 Dynamic Adaptive Scaling**: Automatically adjusts difficulty level (Easy → Medium → Hard) based on historical accuracy.
 
-# Start the server (serves both API & dementia frontend)
-npm start
+### 🩺 3. Caregiver Telemetry & Clinical Console
+- **📊 Real-time Adherence Gauge**: Tracks daily routine completion percentage and missed safety reminders.
+- **📈 Cognitive Trends Telemetry**: Interactive Recharts graphs plotting precision trajectory and sessions by domain.
+- **⏰ Live Routine & Reminder Dispatch**: Caregivers can add scheduled medicine/meal routines and safety alerts in real time.
+- **🌙 Deep Clinical Dark Theme**: Modern obsidian theme with real-time patient session indicators.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
 ```
-Then visit **`http://localhost:5000`** in your browser.
+mindcare-ai/
+├── frontend/                # React 18 + Vite + Tailwind CSS
+│   ├── src/
+│   │   ├── api/            # Axios instance with JWT interceptors
+│   │   ├── components/     # Confetti, Spinners, Accessibility tools
+│   │   ├── context/        # AuthContext (Role-based JWT handling)
+│   │   ├── hooks/          # Web Audio & Web Speech API synthesis
+│   │   ├── layouts/        # Patient & Caregiver dual layout wrappers
+│   │   └── pages/          # Authentication, Games, Telemetry Dashboards
+├── config/                 # MongoDB Atlas connection setup
+├── controllers/            # Auth, Patient, Game, Routine, Caregiver APIs
+├── middleware/             # JWT authentication & Role-based access control
+├── models/                 # Mongoose schemas (User, Patient, GameResult, Routine, Reminder)
+├── routes/                 # REST API endpoints
+└── server.js               # Unified Express server & static asset pipeline
+```
+
+- **Frontend**: React 18, Vite, Tailwind CSS, Recharts, Lucide Icons
+- **Backend**: Node.js, Express.js, REST API
+- **Database**: MongoDB Atlas Cloud, Mongoose ODM
+- **Authentication**: JSON Web Tokens (JWT) & bcrypt.js password hashing
+- **Audio & Speech**: Browser Web Audio API & Web Speech Recognition/Synthesis
 
 ---
 
-## ⚙️ Environment Configuration (`.env`)
+## 💻 Local Development Setup
 
-The application works immediately out-of-the-box in standalone/demo mode, and connects seamlessly to MongoDB Atlas when configured:
+### 1. Clone the repository
+```bash
+git clone https://github.com/siddharth187-max/mindcare-ai.git
+cd mindcare-ai
+```
 
+### 2. Install dependencies
+```bash
+# Install backend dependencies
+npm install
+
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+```
+
+### 3. Configure environment variables
+Create a `.env` file in the root directory:
 ```env
 PORT=5000
+MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRES_IN=7d
-
-# MongoDB connection string (Atlas or Local):
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/mindcare
+NODE_ENV=development
 ```
+
+### 4. Seed demo accounts & run
+```bash
+# Seed demo accounts to MongoDB Atlas
+npm run seed
+
+# Build the frontend and launch unified production server
+npm run build
+node server.js
+```
+
+Open `http://localhost:5000` in your browser.
 
 ---
 
-## 📡 API Overview
+## 🏆 Smart India Hackathon 2026
+- **Problem Statement**: SIH26003 — Cognitive Support & Assistive Platform for Dementia Care
+- **Developer**: Siddharth Rathod
+- **Repository**: [https://github.com/siddharth187-max/mindcare-ai](https://github.com/siddharth187-max/mindcare-ai)
 
-| Endpoint | Method | Description |
-| :--- | :---: | :--- |
-| `/` | `GET` | Serves the Dementia Web Application |
-| `/api/health` | `GET` | Backend server health check |
-| `/api/auth/register` | `POST` | Register patient or caregiver user account |
-| `/api/auth/login` | `POST` | Login and receive JWT token |
-| `/api/auth/me` | `GET` | Current authenticated user profile |
-| `/api/patients/me` | `GET` | Current patient profile details |
-| `/api/routines/today/:patientId` | `GET` | Today's routine items |
-| `/api/routines/:id/complete` | `PATCH` | Mark routine item as completed |
-| `/api/games/result` | `POST` | Log game session & compute adaptive difficulty |
-| `/api/games/history/:patientId` | `GET` | Historical cognitive game performance |
-| `/api/caregiver/dashboard/:patientId` | `GET` | Aggregated dashboard, routine stats & charts |
-| `/api/reminders/pending/:patientId` | `GET` | Fetch pending routine alerts |
+---
+
+## 📄 License
+This project is licensed under the MIT License — feel free to use and build upon this prototype.

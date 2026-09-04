@@ -5,6 +5,7 @@
 const Patient = require("../models/Patient");
 const Routine = require("../models/Routine");
 const Reminder = require("../models/Reminder");
+const GameResult = require("../models/GameResult");
 const { buildPatientStats } = require("../utils/analyticsHelper");
 
 // @route  GET /api/caregiver/patients
@@ -21,7 +22,7 @@ const getMyPatients = async (req, res) => {
 
 // @route  GET /api/caregiver/dashboard/:patientId
 // @desc   Full dashboard for one assigned patient: profile, today's routine,
-//         completed/missed activities, game history summary, stats.
+//         completed/missed activities, live activity stream, game history, stats.
 // @access Private (caregiver only, and only for THEIR patient)
 const getPatientDashboard = async (req, res) => {
   try {
@@ -39,9 +40,68 @@ const getPatientDashboard = async (req, res) => {
     const completedActivities = routines.filter((r) => r.completed);
     const incompleteActivities = routines.filter((r) => !r.completed);
 
+    const activeReminders = await Reminder.find({ patientId, status: "pending" }).sort({ scheduledTime: 1 });
     const missedReminders = await Reminder.find({ patientId, status: "missed" }).sort({ scheduledTime: -1 });
+    const completedReminders = await Reminder.find({ patientId, status: "completed" }).sort({ completedAt: -1 }).limit(10);
+    const allReminders = await Reminder.find({ patientId }).sort({ scheduledTime: -1 }).limit(20);
 
+    const recentGames = await GameResult.find({ patientId }).sort({ completedAt: -1 }).limit(10);
     const stats = await buildPatientStats(patientId);
+
+    // Live Patient Activity Stream (Notifications of the patient working)
+    const activityFeed = [];
+
+    // 1. Completed routines
+    completedActivities.forEach((r) => {
+      activityFeed.push({
+        id: "routine-" + r._id,
+        type: "routine",
+        title: `Completed Routine: "${r.title}"`,
+        detail: `Category: ${r.category.toUpperCase()} • Time: ${r.scheduledTime}`,
+        icon: "📋",
+        timestamp: r.completedAt || r.createdAt || new Date(),
+        badge: "Routine Checked",
+        badgeColor: "emerald",
+      });
+    });
+
+    // 2. Completed / acknowledged reminders
+    completedReminders.forEach((rem) => {
+      activityFeed.push({
+        id: "reminder-" + rem._id,
+        type: "reminder",
+        title: `Acknowledged Reminder: "${rem.title}"`,
+        detail: `Scheduled for: ${new Date(rem.scheduledTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        icon: "🔔",
+        timestamp: rem.completedAt || rem.scheduledTime,
+        badge: "Reminder Done",
+        badgeColor: "blue",
+      });
+    });
+
+    // 3. Cognitive game sessions played
+    const gameTypeLabels = {
+      memory: "Memory Card Match",
+      pattern: "Melody & Pattern Chimes",
+      objectRecognition: "Everyday Object Quiz",
+      routineSequence: "Daily Steps Sequencer",
+    };
+
+    recentGames.forEach((g) => {
+      activityFeed.push({
+        id: "game-" + g._id,
+        type: "game",
+        title: `Played Cognitive Game: ${gameTypeLabels[g.gameType] || g.gameType}`,
+        detail: `Score: ${g.score} • Accuracy: ${g.accuracy}% • Difficulty: ${g.difficulty.toUpperCase()} (${g.timeTaken}s)`,
+        icon: "🧠",
+        timestamp: g.completedAt,
+        badge: `${g.accuracy}% Accuracy`,
+        badgeColor: "purple",
+      });
+    });
+
+    // Sort newest activity first
+    activityFeed.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.status(200).json({
       patient,
@@ -49,6 +109,9 @@ const getPatientDashboard = async (req, res) => {
       completedActivities,
       incompleteActivities,
       missedReminders,
+      activeReminders,
+      allReminders,
+      recentActivity: activityFeed.slice(0, 15),
       stats,
     });
   } catch (error) {

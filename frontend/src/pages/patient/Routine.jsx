@@ -7,6 +7,7 @@ import ConfettiCanvas from '../../components/ConfettiCanvas';
 
 const Routine = () => {
   const [routines, setRoutines] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [patientId, setPatientId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
@@ -16,27 +17,14 @@ const Routine = () => {
   const { speak } = useVoice();
   const confettiRef = useRef();
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const pRes = await api.get('/patients/me');
-        const pat = pRes.data.patient || pRes.data;
-        if (pat && (pat._id || pat.id)) {
-          const pId = pat._id || pat.id;
-          setPatientId(pId);
-          fetchRoutines(pId);
-        } else {
-          setError("Patient profile not found. Please ask your caregiver to set it up.");
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error("Error fetching patient:", err);
-        setError("Could not load your profile. Please try again later.");
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+  const fetchReminders = async (pId) => {
+    try {
+      const res = await api.get(`/reminders/pending/${pId}`);
+      setReminders(res.data.reminders || []);
+    } catch (e) {
+      console.error("Error fetching reminders in routine:", e);
+    }
+  };
 
   const fetchRoutines = async (id) => {
     try {
@@ -48,6 +36,36 @@ const Routine = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let pid = null;
+    const init = async () => {
+      try {
+        const pRes = await api.get('/patients/me');
+        const pat = pRes.data.patient || pRes.data;
+        if (pat && (pat._id || pat.id)) {
+          pid = pat._id || pat.id;
+          setPatientId(pid);
+          await Promise.all([fetchRoutines(pid), fetchReminders(pid)]);
+        } else {
+          setError("Patient profile not found. Please ask your caregiver to set it up.");
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error fetching patient:", err);
+        setError("Could not load your profile. Please try again later.");
+        setLoading(false);
+      }
+    };
+    init();
+
+    // Auto-poll reminders every 15 seconds
+    const interval = setInterval(() => {
+      if (pid) fetchReminders(pid);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleComplete = async (routine) => {
     if (routine.completed) return;
@@ -67,6 +85,21 @@ const Routine = () => {
       );
     } catch (err) {
       console.error("Error completing routine:", err);
+    }
+  };
+
+  const handleCompleteReminder = async (rem) => {
+    try {
+      await api.patch(`/reminders/${rem._id}/complete`);
+      if (confettiRef.current) {
+        confettiRef.current.triggerConfetti();
+      }
+      if (soundEnabled) {
+        speak(`Thank you for completing your reminder: ${rem.title}`);
+      }
+      setReminders(prev => prev.filter(r => r._id !== rem._id));
+    } catch (e) {
+      console.error("Error completing reminder:", e);
     }
   };
 
@@ -144,6 +177,67 @@ const Routine = () => {
           </div>
         </div>
       </div>
+
+      {/* ACTIVE TIMED REMINDERS SECTION */}
+      {reminders.length > 0 && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="text-3xl animate-bounce">🔔</span>
+              <div>
+                <h3 className="text-2xl font-extrabold text-amber-300">Caregiver Reminders</h3>
+                <p className="text-xs text-amber-200/80 font-bold">Important scheduled alerts</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-black">
+              {reminders.length} PENDING
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {reminders.map(rem => {
+              const d = new Date(rem.scheduledTime);
+              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+              return (
+                <div 
+                  key={rem._id}
+                  className="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl flex-shrink-0">
+                      ⏰
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-white">{rem.title}</h4>
+                      <p className="text-sm font-bold text-amber-300">Scheduled for {timeStr}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5 w-full sm:w-auto justify-end">
+                    {soundEnabled && (
+                      <button
+                        onClick={() => speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`)}
+                        className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xl active:scale-95"
+                        title="Read aloud"
+                      >
+                        🔊
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleCompleteReminder(rem)}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-base shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>✓</span>
+                      <span>I Did This</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Time Filter Pills */}
       <div className="flex justify-center gap-2 sm:gap-3 flex-wrap">

@@ -32,6 +32,9 @@ const routineSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  completedAt: {
+    type: Date,
+  },
   reminderEnabled: {
     type: Boolean,
     default: true,
