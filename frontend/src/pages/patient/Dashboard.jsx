@@ -1,43 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import api from '../../api/axios';
-import { useAuth } from '../../context/AuthContext';
 import { useVoice } from '../../hooks/useVoice';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
 
 const Dashboard = () => {
-  const { user } = useAuth();
   const [patient, setPatient] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
-  const outletCtx = useOutletContext() || {};
-  const soundEnabled = outletCtx.soundEnabled ?? true;
-  const highContrast = outletCtx.highContrast ?? false;
-  const { speak } = useVoice();
   const [isSpeakingState, setIsSpeakingState] = useState(false);
+  const [resettingRoutine, setResettingRoutine] = useState(false);
+
+  const { user } = useAuth();
+  const { soundEnabled, highContrast } = useOutletContext() || {};
+  const { speak } = useVoice();
 
   const fetchReminders = async (pId) => {
-    if (!pId) return;
     try {
       const res = await api.get(`/reminders/pending/${pId}`);
       setReminders(res.data.reminders || []);
     } catch (e) {
-      console.error("Error fetching patient reminders:", e);
+      console.error("Error fetching reminders:", e);
     }
   };
 
   useEffect(() => {
-    let patientId = null;
-
+    let pId = null;
     const fetchPatient = async () => {
       try {
-        const res = await api.get('/patients/me');
-        const pat = res.data.patient || res.data;
+        const response = await api.get('/patients/me');
+        const pat = response.data.patient || response.data;
         setPatient(pat);
         if (pat && (pat._id || pat.id)) {
-          patientId = pat._id || pat.id;
-          fetchReminders(patientId);
+          pId = pat._id || pat.id;
+          fetchReminders(pId);
         }
       } catch (err) {
         console.error('Error fetching patient profile:', err);
@@ -48,10 +45,10 @@ const Dashboard = () => {
     fetchPatient();
 
     const timer = setInterval(() => setTime(new Date()), 1000);
-    // Poll reminders every 20 seconds
+    // Poll reminders every 15 seconds
     const reminderPoll = setInterval(() => {
-      if (patientId) fetchReminders(patientId);
-    }, 20000);
+      if (pId) fetchReminders(pId);
+    }, 15000);
 
     return () => {
       clearInterval(timer);
@@ -71,6 +68,24 @@ const Dashboard = () => {
     }
   };
 
+  const handleResetRoutinesFromDashboard = async () => {
+    if (!patient?._id && !patient?.id) return;
+    if (!window.confirm("Reset all today's routine tasks to pending so you can do them again?")) return;
+    setResettingRoutine(true);
+    try {
+      const pid = patient._id || patient.id;
+      await api.post(`/routines/reset/${pid}`);
+      if (soundEnabled) {
+        speak("Your routine tasks have been reset for you!");
+      }
+      alert("✅ All routine tasks have been reset to pending!");
+    } catch (e) {
+      console.error("Error resetting routines:", e);
+    } finally {
+      setResettingRoutine(false);
+    }
+  };
+
   const getPeriod = (hour) => {
     if (hour >= 5 && hour < 12) return { name: 'Morning', icon: '🌅', color: 'from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30' };
     if (hour >= 12 && hour < 17) return { name: 'Afternoon', icon: '☀️', color: 'from-blue-500/20 to-cyan-500/20 text-cyan-300 border-cyan-500/30' };
@@ -79,10 +94,10 @@ const Dashboard = () => {
   };
 
   const period = getPeriod(time.getHours());
-  const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedTime = time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   const formattedDate = time.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const patientDisplayName = patient?.name || user?.name || 'Friend';
-  const greetingText = `Good ${period.name}, ${patientDisplayName}. It is ${formattedTime} on ${formattedDate}. You are safe in your home.`;
+  const greetingText = `Good ${period.name}, ${patientDisplayName}. It is ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })} on ${formattedDate}. You are safe in your home.`;
 
   const handleSpeakGreeting = () => {
     if (soundEnabled) {
@@ -100,31 +115,28 @@ const Dashboard = () => {
   );
 
   const cardStyle = highContrast 
-    ? 'bg-black border-2 border-yellow-300 text-yellow-300' 
+    ? 'bg-black border-2 border-cyan-400 text-white' 
     : 'bg-slate-900/90 border border-slate-800 text-white shadow-xl';
 
   return (
-    <div className="space-y-8 pb-12 animate-fadeIn">
-      {/* Hero Orientation & Clock Card */}
-      <div className={`${cardStyle} rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden border-t-4 ${
-        highContrast ? 'border-t-yellow-300' : 'border-t-purple-500 shadow-[0_0_30px_rgba(147,51,234,0.15)]'
-      }`}>
-        
-        {/* Ambient Purple Gradient Glow */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="space-y-8 max-w-5xl mx-auto animate-fadeIn pb-16">
+      {/* Top Orientation & Live Clock Card */}
+      <div className={`p-6 sm:p-10 rounded-3xl ${cardStyle} shadow-[0_0_30px_rgba(147,51,234,0.15)] relative overflow-hidden`}>
+        {/* Subtle Ambient Glow */}
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="relative z-10">
-          <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-sm mb-4 border ${period.color}`}>
-            <span>{period.icon}</span>
-            <span>{period.name} Period</span>
+        <div className="text-center relative z-10">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r border shadow-sm mb-4">
+            <span className="text-2xl">{period.icon}</span>
+            <span className="uppercase tracking-wider">{period.name} Time</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center my-3">
-            <h2 className="text-6xl sm:text-8xl font-black tracking-tight text-white font-mono drop-shadow-[0_0_20px_rgba(168,85,247,0.35)]">
+          <div className="my-2">
+            <p className="text-4xl sm:text-7xl font-black tracking-tight text-white font-mono drop-shadow-md">
               {formattedTime}
-            </h2>
-            <p className="text-2xl sm:text-3xl font-bold mt-2 text-purple-200">
+            </p>
+            <p className="text-lg sm:text-2xl font-bold text-purple-300 mt-2">
               {formattedDate}
             </p>
           </div>
@@ -159,16 +171,16 @@ const Dashboard = () => {
 
       {/* ACTIVE REMINDERS SECTION (If any exist) */}
       {reminders.length > 0 && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.2)] animate-pulseMatch">
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <span className="text-3xl animate-bounce">🔔</span>
               <div>
-                <h3 className="text-2xl font-extrabold text-amber-300">Active Care Reminders</h3>
-                <p className="text-xs text-amber-200/80 font-bold">Scheduled by your caregiver</p>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-amber-300">Active Care Reminders</h3>
+                <p className="text-sm text-amber-200/80 font-bold">Scheduled by your caregiver in your time zone</p>
               </div>
             </div>
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-black">
+            <span className="px-3.5 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs sm:text-sm font-black">
               {reminders.length} PENDING
             </span>
           </div>
@@ -176,8 +188,7 @@ const Dashboard = () => {
           <div className="space-y-3">
             {reminders.map(rem => {
               const d = new Date(rem.scheduledTime);
-              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+              const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
               return (
                 <div 
@@ -185,12 +196,14 @@ const Dashboard = () => {
                   className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-amber-500/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl flex-shrink-0">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-3xl flex-shrink-0">
                       ⏰
                     </div>
                     <div>
                       <h4 className="text-xl sm:text-2xl font-black text-white">{rem.title}</h4>
-                      <p className="text-sm font-bold text-amber-300">Scheduled for {dateStr} at {timeStr}</p>
+                      <p className="text-base font-bold text-amber-300">
+                        Scheduled for: <strong className="text-white text-lg">{timeStr}</strong>
+                      </p>
                     </div>
                   </div>
 
@@ -198,7 +211,7 @@ const Dashboard = () => {
                     {soundEnabled && (
                       <button
                         onClick={() => speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`)}
-                        className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xl active:scale-95"
+                        className="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-2xl active:scale-95 transition-all"
                         title="Read aloud"
                       >
                         🔊
@@ -206,7 +219,7 @@ const Dashboard = () => {
                     )}
                     <button
                       onClick={() => handleCompleteReminder(rem)}
-                      className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-base shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="flex-1 sm:flex-none px-6 sm:px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                       <span>✓</span>
                       <span>I Did This</span>
@@ -219,65 +232,74 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Card 1: Routine */}
-        <Link 
-          to="/patient/routine"
-          className={`${cardStyle} rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:border-blue-500/50 min-h-[260px] group border-b-4 border-b-blue-500`}
-        >
-          <div className="w-20 h-20 rounded-2xl bg-blue-950/80 border border-blue-500/30 text-blue-400 flex items-center justify-center text-5xl mb-4 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-            📋
+      {/* Main Feature Cards Grid */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Today's Routine Card */}
+        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]`}>
+          <div>
+            <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              📋
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-white">Daily Routine</h3>
+            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              Step-by-step checklist of meals, hygiene, medications, and wellness activities.
+            </p>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-white">
-            Today's Routine
-          </h3>
-          <p className="text-lg font-semibold text-slate-300">
-            View activities & check off tasks
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-blue-400 font-bold text-sm bg-blue-950/60 border border-blue-800/60 px-4 py-1.5 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-            Open Checklist ➔
-          </span>
-        </Link>
+          <div className="space-y-2">
+            <Link
+              to="/patient/routine"
+              className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+            >
+              Open Checklist →
+            </Link>
+            <button
+              onClick={handleResetRoutinesFromDashboard}
+              disabled={resettingRoutine}
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-amber-300 hover:text-amber-200 bg-slate-950 border border-slate-800 hover:border-amber-500/40 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>🔄</span>
+              <span>{resettingRoutine ? 'Resetting...' : 'Reset Tasks to Pending'}</span>
+            </button>
+          </div>
+        </div>
 
-        {/* Card 2: Games */}
-        <Link 
-          to="/patient/games"
-          className={`${cardStyle} rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:border-purple-500/50 min-h-[260px] group border-b-4 border-b-purple-500`}
-        >
-          <div className="w-20 h-20 rounded-2xl bg-purple-950/80 border border-purple-500/30 text-purple-400 flex items-center justify-center text-5xl mb-4 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-            🧠
+        {/* Cognitive Games Card */}
+        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
+          <div>
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              🧠
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-white">Brain Games</h3>
+            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              Calming memory cards, melodic chimes, and everyday object matching games.
+            </p>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-white">
-            Brain Activities
-          </h3>
-          <p className="text-lg font-semibold text-slate-300">
-            Gentle memory & pattern exercises
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-purple-300 font-bold text-sm bg-purple-950/60 border border-purple-800/60 px-4 py-1.5 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
-            Play Activities ➔
-          </span>
-        </Link>
+          <Link
+            to="/patient/games"
+            className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+          >
+            Play Activities →
+          </Link>
+        </div>
 
-        {/* Card 3: Results */}
-        <Link 
-          to="/patient/results"
-          className={`${cardStyle} rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:border-emerald-500/50 min-h-[260px] group border-b-4 border-b-emerald-500`}
-        >
-          <div className="w-20 h-20 rounded-2xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-5xl mb-4 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-            📊
+        {/* My Progress Card */}
+        <div className={`p-6 sm:p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]`}>
+          <div>
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              📊
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-white">My Progress</h3>
+            <p className="text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+              See your activity achievements, scores, and cognitive session completions.
+            </p>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-white">
-            My Progress
-          </h3>
-          <p className="text-lg font-semibold text-slate-300">
-            View completed sessions & scores
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-emerald-400 font-bold text-sm bg-emerald-950/60 border border-emerald-800/60 px-4 py-1.5 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-            View History ➔
-          </span>
-        </Link>
+          <Link
+            to="/patient/results"
+            className="w-full min-h-14 py-3.5 px-6 rounded-2xl text-lg font-black flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+          >
+            View Achievements →
+          </Link>
+        </div>
       </div>
     </div>
   );
