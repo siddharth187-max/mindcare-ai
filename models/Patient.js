@@ -20,11 +20,17 @@ const patientSchema = new mongoose.Schema({
     type: Number,
     min: 0,
   },
-  // The caregiver responsible for this patient
+  // The caregiver responsible for this patient (can be linked post-registration)
   caregiverId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+  },
+  // 6-character easy code to pair patient with caregiver (e.g. MC-4891)
+  pairCode: {
+    type: String,
+    default: function () {
+      return "MC-" + Math.floor(1000 + Math.random() * 9000);
+    },
   },
   emergencyPhone: {
     type: String,

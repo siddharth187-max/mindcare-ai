@@ -6,11 +6,17 @@ import { useAuth } from '../../context/AuthContext';
 
 const Dashboard = () => {
   const [patient, setPatient] = useState(null);
+  const [caregiverInfo, setCaregiverInfo] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
   const [isSpeakingState, setIsSpeakingState] = useState(false);
   const [resettingRoutine, setResettingRoutine] = useState(false);
+
+  // Link Caregiver Modal State
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [caregiverEmailInput, setCaregiverEmailInput] = useState('');
+  const [linkingLoading, setLinkingLoading] = useState(false);
 
   // Active Alert Modal State for Patient
   const [activeAlarmReminder, setActiveAlarmReminder] = useState(null);
@@ -31,7 +37,6 @@ const Dashboard = () => {
       const now = new Date();
       const dueReminder = rems.find(r => {
         const sched = new Date(r.scheduledTime);
-        // If scheduled time has arrived or passed (within last 24 hrs) and not completed
         return sched <= now && r.status === 'pending';
       });
 
@@ -40,12 +45,10 @@ const Dashboard = () => {
         const nowMs = Date.now();
         const lastTime = lastPromptTime.current[remId] || 0;
 
-        // Prompt if not prompted yet or if 60 seconds have passed since last prompt
         if (nowMs - lastTime > 60000) {
           lastPromptTime.current[remId] = nowMs;
           setActiveAlarmReminder(dueReminder);
           
-          // Trigger popping sound & voice prompt
           if (soundEnabled) {
             playPop();
             setTimeout(() => {
@@ -54,7 +57,6 @@ const Dashboard = () => {
             }, 600);
           }
 
-          // Record prompt on backend (tracks prompt 1, 2, 3 and auto-escalates if >= 3)
           try {
             const promptRes = await api.patch(`/reminders/${remId}/prompt`);
             if (promptRes.data.reminder) {
@@ -70,29 +72,32 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    let pId = null;
-    const fetchPatient = async () => {
-      try {
-        const response = await api.get('/patients/me');
-        const pat = response.data.patient || response.data;
-        setPatient(pat);
-        if (pat && (pat._id || pat.id)) {
-          pId = pat._id || pat.id;
-          fetchReminders(pId);
-        }
-      } catch (err) {
-        console.error('Error fetching patient profile:', err);
-      } finally {
-        setLoading(false);
+  const fetchPatientProfile = async () => {
+    try {
+      const response = await api.get('/patients/me');
+      const pat = response.data.patient || response.data;
+      setPatient(pat);
+      if (response.data.caregiver) {
+        setCaregiverInfo(response.data.caregiver);
       }
-    };
-    fetchPatient();
+      if (pat && (pat._id || pat.id)) {
+        fetchReminders(pat._id || pat.id);
+      }
+    } catch (err) {
+      console.error('Error fetching patient profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatientProfile();
 
     const timer = setInterval(() => setTime(new Date()), 1000);
-    // Poll reminders every 12 seconds
     const reminderPoll = setInterval(() => {
-      if (pId) fetchReminders(pId);
+      if (patient?._id || patient?.id) {
+        fetchReminders(patient._id || patient.id);
+      }
     }, 12000);
 
     return () => {
@@ -100,6 +105,25 @@ const Dashboard = () => {
       clearInterval(reminderPoll);
     };
   }, [soundEnabled]);
+
+  const handleLinkCaregiver = async (e) => {
+    e.preventDefault();
+    setLinkingLoading(true);
+    try {
+      const res = await api.post('/patients/link-caregiver', {
+        caregiverEmail: caregiverEmailInput,
+      });
+      alert(res.data.message);
+      setCaregiverInfo(res.data.caregiver);
+      setShowLinkModal(false);
+      setCaregiverEmailInput('');
+      fetchPatientProfile();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error linking caregiver');
+    } finally {
+      setLinkingLoading(false);
+    }
+  };
 
   const handleCompleteReminder = async (rem) => {
     try {
@@ -116,7 +140,7 @@ const Dashboard = () => {
 
   const handleSnooze = () => {
     if (!activeAlarmReminder) return;
-    lastPromptTime.current[activeAlarmReminder._id] = Date.now() + 60000; // snooze for 1 minute
+    lastPromptTime.current[activeAlarmReminder._id] = Date.now() + 60000;
     setActiveAlarmReminder(null);
     if (soundEnabled) {
       speak("Reminder snoozed. We will gently remind you again shortly.");
@@ -180,7 +204,6 @@ const Dashboard = () => {
       {activeAlarmReminder && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
           <div className="max-w-lg w-full rounded-3xl bg-slate-950 border-4 border-amber-500 shadow-[0_0_60px_rgba(245,158,11,0.5)] p-6 sm:p-8 text-center relative overflow-hidden animate-pulse">
-            {/* Flashing Beacon */}
             <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-5xl shadow-[0_0_30px_rgba(245,158,11,0.8)]">
               🔔
             </div>
@@ -199,7 +222,7 @@ const Dashboard = () => {
 
             {(activeAlarmReminder.promptCount || 1) >= 3 && (
               <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-2xl mb-6 text-rose-300 text-xs sm:text-sm font-bold">
-                ⚠️ Final Alert: If not acknowledged, your caregiver Sarah will be notified with sound immediately.
+                ⚠️ Final Alert: If not acknowledged, your caregiver will be notified with sound immediately.
               </div>
             )}
 
@@ -234,6 +257,66 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔗 LINK CAREGIVER MODAL */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full rounded-3xl bg-slate-900 border-2 border-purple-500/50 p-6 sm:p-8 text-white shadow-2xl">
+            <div className="text-center mb-5">
+              <span className="text-4xl p-2.5 rounded-2xl bg-purple-500/20 border border-purple-500/30 inline-block mb-2">
+                🩺
+              </span>
+              <h3 className="text-2xl font-black">Connect Your Caregiver</h3>
+              <p className="text-xs sm:text-sm text-purple-200 mt-1">
+                Enter your caregiver's registered email to link your account for live safety monitoring.
+              </p>
+            </div>
+
+            <form onSubmit={handleLinkCaregiver} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1">
+                  Caregiver Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={caregiverEmailInput}
+                  onChange={(e) => setCaregiverEmailInput(e.target.value)}
+                  placeholder="e.g. caregiver.demo@mindcare.local"
+                  className="w-full p-3.5 rounded-xl bg-slate-950 border border-purple-900/60 text-white font-medium outline-none focus:border-purple-400"
+                />
+              </div>
+
+              {patient?.pairCode && (
+                <div className="p-3 bg-purple-950/40 border border-purple-900/60 rounded-xl text-center">
+                  <span className="text-xs text-purple-300 block font-semibold">Your Quick Pairing Code</span>
+                  <span className="text-xl font-mono font-black text-amber-300 tracking-wider">
+                    {patient.pairCode}
+                  </span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">Your caregiver can also enter this code from their console.</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLinkModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={linkingLoading}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white font-extrabold text-sm shadow-md active:scale-95 transition-all"
+                >
+                  {linkingLoading ? 'Connecting...' : 'Link Caregiver ✓'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -274,6 +357,27 @@ const Dashboard = () => {
               <span>🏡</span>
               <span>You are in your home, safe and comfortable.</span>
             </p>
+          </div>
+
+          {/* Caregiver Link Status Bar */}
+          <div className="max-w-xl mx-auto p-3 rounded-2xl bg-slate-950/60 border border-purple-900/30 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold mb-6">
+            <div className="flex items-center gap-2 text-left">
+              <span className="text-xl">🩺</span>
+              <div>
+                <span className="text-purple-300 font-bold block">
+                  {caregiverInfo?.name ? `Caregiver: ${caregiverInfo.name}` : 'No Caregiver Linked'}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {caregiverInfo?.email ? caregiverInfo.email : 'Link your caregiver for 24/7 safety alerts'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLinkModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 font-bold text-xs transition-all active:scale-95 whitespace-nowrap"
+            >
+              {caregiverInfo ? 'Change 🔗' : 'Connect Caregiver 🔗'}
+            </button>
           </div>
 
           {soundEnabled && (

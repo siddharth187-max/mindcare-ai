@@ -1,11 +1,12 @@
 // controllers/caregiverController.js
 // Everything a caregiver needs to see about ONE assigned patient, in one
-// combined dashboard call, plus a helper to list all their patients.
+// combined dashboard call, plus a helper to list all their patients and link new ones.
 
 const Patient = require("../models/Patient");
 const Routine = require("../models/Routine");
 const Reminder = require("../models/Reminder");
 const GameResult = require("../models/GameResult");
+const User = require("../models/User");
 const { buildPatientStats } = require("../utils/analyticsHelper");
 const { checkAndResetDailyRoutines } = require("../utils/streakHelper");
 
@@ -18,6 +19,50 @@ const getMyPatients = async (req, res) => {
     res.status(200).json({ count: patients.length, patients });
   } catch (error) {
     res.status(500).json({ message: "Server error fetching patients", error: error.message });
+  }
+};
+
+// @route  POST /api/caregiver/link-patient
+// @desc   Caregiver links an existing patient by their email address or pair code
+// @access Private (caregiver only)
+const linkPatient = async (req, res) => {
+  try {
+    const { patientEmail, pairCode } = req.body;
+
+    let patientDoc = null;
+
+    if (patientEmail) {
+      const patientUser = await User.findOne({ email: patientEmail.toLowerCase().trim() });
+      if (!patientUser) {
+        return res.status(404).json({ message: "No account found with this email. Please ask patient to register." });
+      }
+      patientDoc = await Patient.findOne({ userId: patientUser._id });
+      if (!patientDoc) {
+        patientDoc = await Patient.create({
+          userId: patientUser._id,
+          name: patientUser.name,
+          age: 70,
+          caregiverId: req.user._id,
+        });
+      }
+    } else if (pairCode) {
+      patientDoc = await Patient.findOne({ pairCode: pairCode.trim().toUpperCase() });
+      if (!patientDoc) {
+        return res.status(404).json({ message: "Invalid pairing code. Please verify code with patient." });
+      }
+    } else {
+      return res.status(400).json({ message: "Please provide patient email or pairing code." });
+    }
+
+    patientDoc.caregiverId = req.user._id;
+    await patientDoc.save();
+
+    res.status(200).json({
+      message: `Successfully linked ${patientDoc.name} to your caregiver console!`,
+      patient: patientDoc,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error linking patient", error: error.message });
   }
 };
 
@@ -61,7 +106,7 @@ const getPatientDashboard = async (req, res) => {
     // Live Patient Activity Stream (Notifications of the patient working + Alerts)
     const activityFeed = [];
 
-    // 1. Missed Day Inactivity Alert (if patient missed yesterday's routines entirely)
+    // 1. Missed Day Inactivity Alert
     if (patient.missedDaysAlert) {
       activityFeed.push({
         id: "missed-day-" + (patient.lastMissedDate || "alert"),
@@ -164,4 +209,4 @@ const getPatientDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getMyPatients, getPatientDashboard };
+module.exports = { getMyPatients, linkPatient, getPatientDashboard };

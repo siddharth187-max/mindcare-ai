@@ -22,6 +22,11 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('routines'); // 'routines' or 'reminders'
   const [resetting, setResetting] = useState(false);
 
+  // Link Patient Modal State
+  const [showLinkPatientModal, setShowLinkPatientModal] = useState(false);
+  const [patientIdentifierInput, setPatientIdentifierInput] = useState('');
+  const [linkPatientLoading, setLinkPatientLoading] = useState(false);
+
   const { playCaregiverAlert, speak } = useVoice();
   const prevEscalatedCount = useRef(0);
 
@@ -78,10 +83,8 @@ const Dashboard = () => {
       const data = response.data;
       setDashboardData(data);
 
-      // Check if there are escalated unresponded alerts
       const escalated = data.escalatedAlerts || [];
       if (escalated.length > 0 && escalated.length > prevEscalatedCount.current) {
-        // Play caregiver alert sound & voice alert
         playCaregiverAlert();
         setTimeout(() => {
           speak(`Attention: ${data.patient?.name || 'Patient'} has not responded to reminder: ${escalated[0].title}.`);
@@ -102,7 +105,6 @@ const Dashboard = () => {
     fetchPatients();
   }, []);
 
-  // Poll for real-time live telemetry every 8 seconds
   useEffect(() => {
     if (selectedPatientId) {
       fetchDashboardData(selectedPatientId);
@@ -112,6 +114,32 @@ const Dashboard = () => {
       return () => clearInterval(interval);
     }
   }, [selectedPatientId]);
+
+  const handleLinkPatient = async (e) => {
+    e.preventDefault();
+    setLinkPatientLoading(true);
+    try {
+      const trimmed = patientIdentifierInput.trim();
+      const isCode = trimmed.toUpperCase().startsWith('MC-');
+      const payload = isCode ? { pairCode: trimmed } : { patientEmail: trimmed };
+      
+      const res = await api.post('/caregiver/link-patient', payload);
+      alert(res.data.message);
+      setShowLinkPatientModal(false);
+      setPatientIdentifierInput('');
+
+      const ptsRes = await api.get('/caregiver/patients');
+      const pList = ptsRes.data.patients || [];
+      setPatients(pList);
+      if (res.data.patient) {
+        setSelectedPatientId(res.data.patient._id || res.data.patient.id);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error linking patient');
+    } finally {
+      setLinkPatientLoading(false);
+    }
+  };
 
   const handleAddRoutine = async (e) => {
     e.preventDefault();
@@ -216,7 +244,53 @@ const Dashboard = () => {
   );
   
   if (error && !dashboardData) return <div className="p-8 text-center text-red-500 font-bold">{error}</div>;
-  if (!patients.length) return <div className="p-8 text-center text-slate-500">No patients assigned to you yet.</div>;
+
+  // No patients linked yet empty state
+  if (!patients.length) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 sm:p-10 rounded-3xl border text-center shadow-xl bg-slate-900 border-slate-800 text-white animate-fadeIn">
+        <span className="text-5xl p-3 bg-blue-500/20 border border-blue-500/30 rounded-2xl inline-block mb-4">
+          👥
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-black mb-2">Welcome to MindCare Pro</h2>
+        <p className="text-sm text-slate-300 mb-6 leading-relaxed">
+          You don't have any patients linked to your caregiver console yet. Link your patient's registered email or pair code to start 24/7 telemetry monitoring.
+        </p>
+        <button
+          onClick={() => setShowLinkPatientModal(true)}
+          className="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-base shadow-lg transition-all active:scale-95"
+        >
+          + 🔗 Link Patient via Email or Code
+        </button>
+
+        {showLinkPatientModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+            <div className="max-w-md w-full rounded-3xl bg-slate-900 border-2 border-blue-500/50 p-6 sm:p-8 text-white shadow-2xl text-left">
+              <h3 className="text-xl font-extrabold mb-1">Link Patient Account</h3>
+              <p className="text-xs text-slate-400 mb-4">Enter patient's registered email or 6-digit pair code (e.g. MC-4821)</p>
+              <form onSubmit={handleLinkPatient} className="space-y-4">
+                <input
+                  type="text"
+                  required
+                  value={patientIdentifierInput}
+                  onChange={(e) => setPatientIdentifierInput(e.target.value)}
+                  placeholder="patient@mindcare.local or MC-1234"
+                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium outline-none focus:border-blue-400"
+                />
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setShowLinkPatientModal(false)} className="px-4 py-2 text-slate-400 text-sm font-bold">Cancel</button>
+                  <button type="submit" disabled={linkPatientLoading} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow active:scale-95">
+                    {linkPatientLoading ? 'Linking...' : 'Connect Patient ✓'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!dashboardData) return null;
 
   const patient = dashboardData.patient || {};
@@ -230,6 +304,33 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn pb-16">
+      
+      {/* Link Patient Modal (Accessible anytime) */}
+      {showLinkPatientModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full rounded-3xl bg-slate-900 border-2 border-blue-500/50 p-6 sm:p-8 text-white shadow-2xl text-left">
+            <h3 className="text-xl font-extrabold mb-1">Link Another Patient</h3>
+            <p className="text-xs text-slate-400 mb-4">Enter patient's registered email or their 6-digit pairing code (e.g. MC-4821)</p>
+            <form onSubmit={handleLinkPatient} className="space-y-4">
+              <input
+                type="text"
+                required
+                value={patientIdentifierInput}
+                onChange={(e) => setPatientIdentifierInput(e.target.value)}
+                placeholder="patient@mindcare.local or MC-1234"
+                className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium outline-none focus:border-blue-400"
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowLinkPatientModal(false)} className="px-4 py-2 text-slate-400 text-sm font-bold">Cancel</button>
+                <button type="submit" disabled={linkPatientLoading} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow active:scale-95">
+                  {linkPatientLoading ? 'Linking...' : 'Connect Patient ✓'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* 🚨 URGENT UNRESPONDED PATIENT CARE ALERT BANNER */}
       {escalatedAlerts.length > 0 && (
         <div className="p-5 sm:p-6 rounded-3xl bg-rose-950/80 border-2 border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.4)] animate-pulse">
@@ -260,7 +361,7 @@ const Dashboard = () => {
               <button
                 onClick={() => {
                   playCaregiverAlert();
-                  alert(`Calling ${patient?.name}'s home phone / primary contact...`);
+                  alert(`Calling ${patient?.name}'s primary emergency contact (+91 98765 43210)...`);
                 }}
                 className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
               >
@@ -286,7 +387,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* ⚠️ MISSED DAY INACTIVITY BANNER (If patient was inactive yesterday) */}
+      {/* ⚠️ MISSED DAY INACTIVITY BANNER */}
       {dashboardData?.missedDayAlert && (
         <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/80 border-2 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-fadeIn">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -309,7 +410,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Top Patient Header with Live Telemetry Pulse & Streak */}
+      {/* Top Patient Header with Live Telemetry Pulse, Streak & Link Patient */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -325,24 +426,37 @@ const Dashboard = () => {
               <span>{dashboardData?.streak?.current || patient?.currentStreak || 1} Day Streak</span>
             </span>
           </div>
-          {patient?.age && <p className={`text-sm font-semibold ${subTextStyle} mt-0.5`}>Age: {patient.age} • Care Profile Monitored 24/7</p>}
+          {patient?.age && (
+            <p className={`text-sm font-semibold ${subTextStyle} mt-0.5`}>
+              Age: {patient.age} • Pair Code: <strong className="text-purple-400 font-mono">{patient.pairCode || 'MC-DEMO'}</strong>
+            </p>
+          )}
         </div>
 
-        {patients.length > 1 && (
-          <select
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            className={`border rounded-xl shadow-sm p-2.5 font-bold text-sm outline-none ${
-              darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-800'
-            }`}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => setShowLinkPatientModal(true)}
+            className="px-3.5 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/40 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95"
           >
-            {patients.map((p) => (
-              <option key={p._id || p.id} value={p._id || p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        )}
+            + 🔗 Link Patient
+          </button>
+
+          {patients.length > 1 && (
+            <select
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+              className={`border rounded-xl shadow-sm p-2 font-bold text-sm outline-none ${
+                darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-800'
+              }`}
+            >
+              {patients.map((p) => (
+                <option key={p._id || p.id} value={p._id || p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {/* KPI Stats Grid */}

@@ -3,6 +3,7 @@
 
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const Patient = require("../models/Patient");
 const generateToken = require("../utils/generateToken");
 
 // @route  POST /api/auth/register
@@ -39,6 +40,16 @@ const register = async (req, res) => {
       password: hashedPassword,
       role,
     });
+
+    // If registering as a patient, automatically initialize their Patient profile
+    if (role === "patient") {
+      await Patient.create({
+        userId: user._id,
+        name: user.name,
+        age: 70,
+        preferredLanguage: "English",
+      });
+    }
 
     const token = generateToken(user._id, user.role);
 
@@ -101,7 +112,6 @@ const login = async (req, res) => {
 // @desc   Get the currently logged-in user's info
 // @access Private
 const getMe = async (req, res) => {
-  // req.user is set by authMiddleware.protect
   res.status(200).json({
     user: {
       id: req.user._id,
