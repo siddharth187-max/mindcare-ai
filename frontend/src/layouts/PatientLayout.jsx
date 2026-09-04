@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getAudioContext, triggerHapticAlert, triggerBrowserNotification, playChime } from '../hooks/useVoice';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
 const PatientLayout = () => {
@@ -10,6 +11,31 @@ const PatientLayout = () => {
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showMobileAudioBanner, setShowMobileAudioBanner] = useState(false);
+
+  useEffect(() => {
+    // Check if audio has been unlocked on this device
+    const isUnlocked = sessionStorage.getItem('mindcare_audio_unlocked');
+    if (!isUnlocked) {
+      setShowMobileAudioBanner(true);
+    }
+  }, []);
+
+  const handleUnlockMobileAudio = () => {
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      if ('speechSynthesis' in window) window.speechSynthesis.resume();
+      triggerHapticAlert([100, 50, 150]);
+      triggerBrowserNotification('MindCare Alerts Active', 'Sound, popups, and vibration are now ready.');
+      playChime('pop');
+      sessionStorage.setItem('mindcare_audio_unlocked', 'true');
+      setShowMobileAudioBanner(false);
+    } catch (e) {
+      console.warn(e);
+      setShowMobileAudioBanner(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -31,6 +57,22 @@ const PatientLayout = () => {
       : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
     } ${getFontSizeClass()} font-sans transition-colors duration-300`}>
       
+      {/* Mobile Audio & Vibration Activator Banner */}
+      {showMobileAudioBanner && (
+        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 text-white px-4 py-2.5 shadow-md flex items-center justify-between text-xs sm:text-sm font-bold animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <span className="text-xl animate-bounce">📱</span>
+            <span>Tap to enable Mobile Sound, Vibration & Popup Alarms</span>
+          </div>
+          <button
+            onClick={handleUnlockMobileAudio}
+            className="px-3.5 py-1 bg-white text-purple-900 font-black rounded-lg shadow hover:bg-purple-100 active:scale-95 transition-all text-xs uppercase"
+          >
+            Enable Now ✓
+          </button>
+        </div>
+      )}
+
       {/* Top Obsidian Glass Navigation Header */}
       <header className={`sticky top-0 z-40 shadow-xl ${
         highContrast 

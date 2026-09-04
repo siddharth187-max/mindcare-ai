@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getAudioContext, triggerHapticAlert, triggerBrowserNotification, playCaregiverEscalationSound } from '../hooks/useVoice';
 import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
 const CaregiverLayout = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const [showMobileAudioBanner, setShowMobileAudioBanner] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('mindcare_caregiver_dark') === 'true';
   });
@@ -13,6 +15,29 @@ const CaregiverLayout = () => {
   useEffect(() => {
     localStorage.setItem('mindcare_caregiver_dark', darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    const isUnlocked = sessionStorage.getItem('mindcare_audio_unlocked');
+    if (!isUnlocked) {
+      setShowMobileAudioBanner(true);
+    }
+  }, []);
+
+  const handleUnlockMobileAudio = () => {
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      if ('speechSynthesis' in window) window.speechSynthesis.resume();
+      triggerHapticAlert([100, 50, 150]);
+      triggerBrowserNotification('Caregiver Alarms Active', 'Emergency chimes and phone vibrations are enabled.');
+      playCaregiverEscalationSound();
+      sessionStorage.setItem('mindcare_audio_unlocked', 'true');
+      setShowMobileAudioBanner(false);
+    } catch (e) {
+      console.warn(e);
+      setShowMobileAudioBanner(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -31,6 +56,22 @@ const CaregiverLayout = () => {
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
       darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     }`}>
+      {/* Mobile Audio & Vibration Activator Banner */}
+      {showMobileAudioBanner && (
+        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white px-4 py-2.5 shadow-md flex items-center justify-between text-xs sm:text-sm font-bold animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <span className="text-xl animate-bounce">📱</span>
+            <span>Tap to enable Mobile Emergency Sound & Phone Vibrations</span>
+          </div>
+          <button
+            onClick={handleUnlockMobileAudio}
+            className="px-3.5 py-1 bg-white text-blue-900 font-black rounded-lg shadow hover:bg-blue-100 active:scale-95 transition-all text-xs uppercase"
+          >
+            Enable Now ✓
+          </button>
+        </div>
+      )}
+
       {/* Top Clinical Monitoring Header */}
       <header className={`sticky top-0 z-30 shadow-md transition-colors ${
         darkMode ? 'bg-slate-900 border-b border-slate-800' : 'bg-white border-b border-slate-200'
