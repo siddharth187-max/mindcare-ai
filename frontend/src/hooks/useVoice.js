@@ -12,6 +12,95 @@ function getAudioContext() {
   return audioCtx;
 }
 
+// Specialized popping / flash alarm for reminder due
+export function playPopFlashSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // Pop 1 (high resonant bubble pop)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(800, now);
+    osc1.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.09);
+
+    // Pop 2 (second higher bubble pop)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1200, now + 0.12);
+    osc2.frequency.exponentialRampToValueAtTime(1800, now + 0.2);
+    gain2.gain.setValueAtTime(0.35, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.22);
+
+    // Gentle 3-note melodic chime following the pop (C5 -> E5 -> G5)
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + 0.25 + i * 0.14);
+      gain.gain.setValueAtTime(0.22, now + 0.25 + i * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25 + i * 0.14 + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + 0.25 + i * 0.14);
+      osc.stop(now + 0.25 + i * 0.14 + 0.5);
+    });
+  } catch (e) {
+    console.warn('Audio pop error:', e);
+  }
+}
+
+// Urgent Caregiver Escalation Sound (Alert for patient not responding after 3 attempts)
+export function playCaregiverEscalationSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // Two-tone attention beacon pulse (880Hz -> 660Hz) repeated twice
+    [0, 0.35].forEach((offset) => {
+      const oscA = ctx.createOscillator();
+      const gainA = ctx.createGain();
+      oscA.type = 'sine';
+      oscA.frequency.setValueAtTime(880, now + offset);
+      gainA.gain.setValueAtTime(0.25, now + offset);
+      gainA.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
+      oscA.connect(gainA);
+      gainA.connect(ctx.destination);
+      oscA.start(now + offset);
+      oscA.stop(now + offset + 0.15);
+
+      const oscB = ctx.createOscillator();
+      const gainB = ctx.createGain();
+      oscB.type = 'triangle';
+      oscB.frequency.setValueAtTime(659.25, now + offset + 0.16);
+      gainB.gain.setValueAtTime(0.25, now + offset + 0.16);
+      gainB.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.32);
+      oscB.connect(gainB);
+      gainB.connect(ctx.destination);
+      oscB.start(now + offset + 0.16);
+      oscB.stop(now + offset + 0.32);
+    });
+  } catch (e) {
+    console.warn('Caregiver alarm error:', e);
+  }
+}
+
 export function playChime(type = 'success', noteFreq = null) {
   if (!soundEnabled) return;
   try {
@@ -34,6 +123,15 @@ export function playChime(type = 'success', noteFreq = null) {
     }
 
     switch (type) {
+      case 'pop':
+      case 'flash':
+      case 'reminderDue':
+        playPopFlashSound();
+        break;
+      case 'urgent':
+      case 'caregiverAlert':
+        playCaregiverEscalationSound();
+        break;
       case 'success': {
         [523.25, 659.25, 783.99].forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -140,5 +238,7 @@ export function isSoundEnabled() {
 export function useVoice() {
   const speak = useCallback((text) => speakText(text), []);
   const chime = useCallback((type, freq) => playChime(type, freq), []);
-  return { speak, chime, toggleSound, isSoundEnabled };
+  const playPop = useCallback(() => playPopFlashSound(), []);
+  const playCaregiverAlert = useCallback(() => playCaregiverEscalationSound(), []);
+  return { speak, chime, playPop, playCaregiverAlert, toggleSound, isSoundEnabled };
 }

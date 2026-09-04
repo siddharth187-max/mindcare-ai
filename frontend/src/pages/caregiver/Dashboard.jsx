@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import api from '../../api/axios';
+import { useVoice } from '../../hooks/useVoice';
 import {
   BarChart,
   Bar,
@@ -20,6 +21,9 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('routines'); // 'routines' or 'reminders'
   const [resetting, setResetting] = useState(false);
+
+  const { playCaregiverAlert, speak } = useVoice();
+  const prevEscalatedCount = useRef(0);
 
   // Modals state
   const [showRoutineModal, setShowRoutineModal] = useState(false);
@@ -71,7 +75,20 @@ const Dashboard = () => {
     try {
       if (!silent) setLoading(true);
       const response = await api.get(`/caregiver/dashboard/${patientId}`);
-      setDashboardData(response.data);
+      const data = response.data;
+      setDashboardData(data);
+
+      // Check if there are escalated unresponded alerts
+      const escalated = data.escalatedAlerts || [];
+      if (escalated.length > 0 && escalated.length > prevEscalatedCount.current) {
+        // Play caregiver alert sound & voice alert
+        playCaregiverAlert();
+        setTimeout(() => {
+          speak(`Attention: ${data.patient?.name || 'Patient'} has not responded to reminder: ${escalated[0].title}.`);
+        }, 500);
+      }
+      prevEscalatedCount.current = escalated.length;
+
       if (!silent) setLoading(false);
     } catch (err) {
       if (!silent) {
@@ -127,6 +144,34 @@ const Dashboard = () => {
     }
   };
 
+  const handleAcknowledgeAlert = async (id) => {
+    try {
+      await api.patch(`/reminders/${id}/acknowledge-caregiver`);
+      fetchDashboardData(selectedPatientId, true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleResendPrompt = async (id) => {
+    try {
+      await api.patch(`/reminders/${id}/resend-prompt`);
+      alert("✅ Reminder has been resent to patient with high-priority audio chime.");
+      fetchDashboardData(selectedPatientId, true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleMarkCompleteByCaregiver = async (id) => {
+    try {
+      await api.patch(`/reminders/${id}/complete`);
+      fetchDashboardData(selectedPatientId, true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleResetAllRoutines = async () => {
     if (!window.confirm("Reset all routines to pending so the patient can do them again?")) return;
     setResetting(true);
@@ -178,12 +223,69 @@ const Dashboard = () => {
   const stats = dashboardData.stats || {};
   const todayRoutines = dashboardData.todaysRoutine || dashboardData.todayRoutines || [];
   const activeReminders = dashboardData.activeReminders || [];
+  const escalatedAlerts = dashboardData.escalatedAlerts || [];
   const recentActivity = dashboardData.recentActivity || [];
   const completedCount = dashboardData.completedActivities?.length || todayRoutines.filter(r => r.completed).length;
   const adherence = todayRoutines.length > 0 ? `${Math.round((completedCount / todayRoutines.length) * 100)}%` : '0%';
 
   return (
     <div className="space-y-6 animate-fadeIn pb-16">
+      {/* 🚨 URGENT UNRESPONDED PATIENT CARE ALERT BANNER */}
+      {escalatedAlerts.length > 0 && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-rose-950/80 border-2 border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.4)] animate-pulse">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-start gap-4">
+              <span className="text-4xl p-2.5 rounded-2xl bg-rose-900/60 border border-rose-500/50 shadow-inner flex-shrink-0">
+                🚨
+              </span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xl sm:text-2xl font-black text-rose-200">
+                    Urgent Alert: Patient Unresponsive to Reminder
+                  </h3>
+                  <span className="px-2.5 py-0.5 bg-rose-500 text-white rounded-full text-xs font-black uppercase">
+                    3 Alerts Ignored
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-bold text-rose-300 mt-1">
+                  {patient?.name} was prompted 3 times with popping sound alarms for: <strong className="text-white underline">"{escalatedAlerts[0].title}"</strong>
+                </p>
+                <p className="text-xs text-rose-400 font-mono mt-0.5">
+                  Scheduled for {new Date(escalatedAlerts[0].scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })} • Immediate caregiver follow-up recommended.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2.5 w-full md:w-auto justify-end">
+              <button
+                onClick={() => {
+                  playCaregiverAlert();
+                  alert(`Calling ${patient?.name}'s home phone / primary contact...`);
+                }}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <span>📞</span>
+                <span>Call Patient</span>
+              </button>
+              <button
+                onClick={() => handleResendPrompt(escalatedAlerts[0]._id)}
+                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <span>🔁</span>
+                <span>Resend Alarm</span>
+              </button>
+              <button
+                onClick={() => handleMarkCompleteByCaregiver(escalatedAlerts[0]._id)}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <span>✓</span>
+                <span>Mark Done</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Patient Header with Live Telemetry Pulse */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -271,7 +373,9 @@ const Dashboard = () => {
                 <div 
                   key={act.id} 
                   className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
-                    darkMode ? 'bg-slate-950/70 border-slate-800 hover:border-slate-700' : 'bg-slate-50 border-slate-200'
+                    act.badgeColor === 'rose'
+                    ? 'bg-rose-950/40 border-rose-500/50 shadow-md'
+                    : darkMode ? 'bg-slate-950/70 border-slate-800 hover:border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
@@ -284,6 +388,8 @@ const Dashboard = () => {
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
                           : act.badgeColor === 'purple' 
                           ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' 
+                          : act.badgeColor === 'rose'
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
                           : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
                         }`}>
                           {act.badge}
@@ -441,19 +547,34 @@ const Dashboard = () => {
                     <div 
                       key={rem._id} 
                       className={`flex justify-between items-center p-3 rounded-xl border transition-colors ${
-                        darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
+                        rem.escalatedToCaregiver
+                        ? 'border-rose-500/50 bg-rose-950/30'
+                        : darkMode ? 'border-slate-800 bg-slate-950/50 hover:bg-slate-800/50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
                       }`}
                     >
                       <div>
-                        <p className="font-bold text-sm text-white">{rem.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-white">{rem.title}</p>
+                          {rem.promptCount > 0 && (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-mono">
+                              {rem.promptCount}/3
+                            </span>
+                          )}
+                        </div>
                         <p className={`text-xs ${subTextStyle}`}>
                           ⏰ {dateFormatted} at <strong className="text-amber-400">{timeFormatted}</strong>
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                          {rem.status}
-                        </span>
+                        {rem.escalatedToCaregiver ? (
+                          <span className="text-xs font-bold bg-rose-500/20 text-rose-300 px-2.5 py-0.5 rounded-full border border-rose-500/30 animate-pulse">
+                            🚨 Unresponsive
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                            {rem.status}
+                          </span>
+                        )}
                         <button 
                           onClick={() => handleDeleteReminder(rem._id)} 
                           className="text-slate-400 hover:text-red-500 text-lg px-1.5 transition-colors"
@@ -541,7 +662,7 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className={`rounded-3xl max-w-md w-full p-6 shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}>
             <h3 className="text-xl font-extrabold mb-1">Add Safety Reminder</h3>
-            <p className="text-xs text-slate-400 mb-4">Broadcasts to patient view in your exact local time zone.</p>
+            <p className="text-xs text-slate-400 mb-4">Patient will receive 3 popping sound alarms before escalating to you.</p>
             <form onSubmit={handleAddReminder} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-80">Reminder Title</label>

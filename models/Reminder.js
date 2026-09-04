@@ -1,7 +1,5 @@
 // models/Reminder.js
-// A simple reminder record. Kept separate from Routine so that reminders
-// can be tracked/queried on their own (pending vs missed vs completed),
-// without building a full notification service yet.
+// A reminder record with multi-stage audio/visual escalation telemetry.
 
 const mongoose = require("mongoose");
 
@@ -11,7 +9,6 @@ const reminderSchema = new mongoose.Schema({
     ref: "Patient",
     required: true,
   },
-  // Optional link back to the routine item this reminder is for
   routineId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Routine",
@@ -32,6 +29,29 @@ const reminderSchema = new mongoose.Schema({
   },
   completedAt: {
     type: Date,
+  },
+  // Multi-prompt escalation tracking (3 prompts before caregiver escalation)
+  promptCount: {
+    type: Number,
+    default: 0,
+  },
+  lastPromptAt: {
+    type: Date,
+  },
+  escalatedToCaregiver: {
+    type: Boolean,
+    default: false,
+  },
+  escalatedAt: {
+    type: Date,
+  },
+  caregiverAcknowledged: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 

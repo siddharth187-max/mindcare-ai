@@ -15,7 +15,7 @@ const Routine = () => {
   const [error, setError] = useState('');
   
   const { soundEnabled, highContrast } = useOutletContext() || {};
-  const { speak } = useVoice();
+  const { speak, playPop } = useVoice();
   const confettiRef = useRef();
 
   const fetchReminders = async (pId) => {
@@ -266,9 +266,12 @@ const Routine = () => {
                   <div className="flex gap-2.5 w-full sm:w-auto justify-end">
                     {soundEnabled && (
                       <button
-                        onClick={() => speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`)}
+                        onClick={() => {
+                          playPop();
+                          speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`);
+                        }}
                         className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xl active:scale-95"
-                        title="Read aloud"
+                        title="Read aloud with popping sound"
                       >
                         🔊
                       </button>

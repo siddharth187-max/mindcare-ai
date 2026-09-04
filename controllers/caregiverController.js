@@ -22,7 +22,7 @@ const getMyPatients = async (req, res) => {
 
 // @route  GET /api/caregiver/dashboard/:patientId
 // @desc   Full dashboard for one assigned patient: profile, today's routine,
-//         completed/missed activities, live activity stream, game history, stats.
+//         completed/missed activities, live activity stream, escalated alerts, stats.
 // @access Private (caregiver only, and only for THEIR patient)
 const getPatientDashboard = async (req, res) => {
   try {
@@ -32,7 +32,7 @@ const getPatientDashboard = async (req, res) => {
     if (!patient) return res.status(404).json({ message: "Patient not found" });
 
     // Security check: this caregiver must be the one assigned to this patient
-    if (patient.caregiverId.toString() !== req.user._id.toString()) {
+    if (patient.caregiverId && patient.caregiverId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "You are not the assigned caregiver for this patient" });
     }
 
@@ -45,13 +45,34 @@ const getPatientDashboard = async (req, res) => {
     const completedReminders = await Reminder.find({ patientId, status: "completed" }).sort({ completedAt: -1 }).limit(10);
     const allReminders = await Reminder.find({ patientId }).sort({ scheduledTime: -1 }).limit(20);
 
+    // 🚨 Escalated Unresponded Reminders (Patient prompted 3 times with no response)
+    const escalatedAlerts = await Reminder.find({
+      patientId,
+      escalatedToCaregiver: true,
+      status: { $ne: "completed" },
+    }).sort({ scheduledTime: -1 });
+
     const recentGames = await GameResult.find({ patientId }).sort({ completedAt: -1 }).limit(10);
     const stats = await buildPatientStats(patientId);
 
-    // Live Patient Activity Stream (Notifications of the patient working)
+    // Live Patient Activity Stream (Notifications of the patient working + Alerts)
     const activityFeed = [];
 
-    // 1. Completed routines
+    // 1. Escalated alerts (Highest Priority)
+    escalatedAlerts.forEach((rem) => {
+      activityFeed.push({
+        id: "escalated-" + rem._id,
+        type: "escalation",
+        title: `🚨 NO RESPONSE: "${rem.title}"`,
+        detail: `Prompted 3 times with audio & visual alarms • Scheduled for ${new Date(rem.scheduledTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })}`,
+        icon: "🚨",
+        timestamp: rem.escalatedAt || rem.scheduledTime,
+        badge: "Urgent Alert",
+        badgeColor: "rose",
+      });
+    });
+
+    // 2. Completed routines
     completedActivities.forEach((r) => {
       activityFeed.push({
         id: "routine-" + r._id,
@@ -65,13 +86,13 @@ const getPatientDashboard = async (req, res) => {
       });
     });
 
-    // 2. Completed / acknowledged reminders
+    // 3. Completed / acknowledged reminders
     completedReminders.forEach((rem) => {
       activityFeed.push({
         id: "reminder-" + rem._id,
         type: "reminder",
         title: `Acknowledged Reminder: "${rem.title}"`,
-        detail: `Scheduled for: ${new Date(rem.scheduledTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        detail: `Scheduled for: ${new Date(rem.scheduledTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })}`,
         icon: "🔔",
         timestamp: rem.completedAt || rem.scheduledTime,
         badge: "Reminder Done",
@@ -79,7 +100,7 @@ const getPatientDashboard = async (req, res) => {
       });
     });
 
-    // 3. Cognitive game sessions played
+    // 4. Cognitive game sessions played
     const gameTypeLabels = {
       memory: "Memory Card Match",
       pattern: "Melody & Pattern Chimes",
@@ -111,6 +132,7 @@ const getPatientDashboard = async (req, res) => {
       missedReminders,
       activeReminders,
       allReminders,
+      escalatedAlerts,
       recentActivity: activityFeed.slice(0, 15),
       stats,
     });
