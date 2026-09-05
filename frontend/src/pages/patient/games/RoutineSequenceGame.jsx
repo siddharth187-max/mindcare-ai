@@ -83,7 +83,6 @@ export default function RoutineSequenceGame() {
     setAvailableSteps(newAvailable);
 
     if (newAvailable.length === 0) {
-      // All selected - verify sequence
       checkSequence(newChosen);
     }
   };
@@ -139,22 +138,22 @@ export default function RoutineSequenceGame() {
       {showConfetti && <ConfettiCanvas active={true} />}
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#EADBCC] pb-4">
         <Link 
           to="/patient/games" 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#263B42] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm sm:text-base transition-all flex items-center gap-2 active:scale-95"
         >
           ← Back to Activities
         </Link>
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-black text-white">Daily Steps in Order</h1>
-          <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mt-1">
+          <h1 className="text-3xl font-extrabold text-[#263B42]">Daily Steps in Order</h1>
+          <p className="text-xs font-bold text-[#397F7A] uppercase tracking-wider mt-0.5">
             {difficulty === 'hard' ? "Evening Sleep Preparation" : "Making a Warm Cup of Tea"}
           </p>
         </div>
         <button 
           onClick={handleResetCurrent} 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#566D75] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
         >
           🔄 Reset Sequence
         </button>
@@ -163,14 +162,14 @@ export default function RoutineSequenceGame() {
       {!completed ? (
         <div className="space-y-8 max-w-2xl mx-auto">
           {/* Chosen Steps (Target Zone) */}
-          <div className="bg-slate-900/90 border-2 border-dashed border-emerald-500/40 p-6 rounded-3xl shadow-xl">
-            <h3 className="text-sm font-extrabold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-[#FFFDF7] border-2 border-dashed border-[#8DB7A5] p-6 sm:p-7 rounded-3xl shadow-sm">
+            <h3 className="text-sm font-extrabold text-[#397F7A] uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>🎯</span>
               <span>Your Chosen Step Order ({chosenSteps.length} of {originalSteps.length}):</span>
             </h3>
             
             {chosenSteps.length === 0 ? (
-              <p className="text-slate-400 text-center py-6 font-medium text-lg">
+              <p className="text-[#566D75] text-center py-6 font-medium text-lg">
                 Tap the steps below in the order you would do them!
               </p>
             ) : (
@@ -178,13 +177,13 @@ export default function RoutineSequenceGame() {
                 {chosenSteps.map((step, idx) => (
                   <div 
                     key={idx}
-                    className="p-4 bg-emerald-950/80 border border-emerald-500/50 text-white rounded-2xl flex items-center gap-4 shadow-md animate-fadeIn"
+                    className="p-4 bg-[#EBF5ED] border border-[#B7D9BE] text-[#263B42] rounded-2xl flex items-center gap-4 shadow-sm animate-fadeIn"
                   >
-                    <span className="w-9 h-9 rounded-full bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-sm">
+                    <span className="w-8 h-8 rounded-full bg-[#4F8A5B] text-white font-bold text-base flex items-center justify-center">
                       {idx + 1}
                     </span>
                     <span className="text-3xl">{step.icon}</span>
-                    <span className="text-lg font-bold">{step.text}</span>
+                    <span className="text-base sm:text-lg font-bold">{step.text}</span>
                   </div>
                 ))}
               </div>
@@ -193,53 +192,53 @@ export default function RoutineSequenceGame() {
 
           {/* Available Steps (Source Zone) */}
           <div className="space-y-3">
-            <h3 className="text-sm font-extrabold text-purple-300 uppercase tracking-wider mb-2">
-              Available Steps (Tap in Order):
+            <h3 className="text-sm font-extrabold text-[#566D75] uppercase tracking-wider mb-2">
+              Available Steps (Tap to add in order):
             </h3>
             {availableSteps.map((step) => (
               <button
                 key={step.id}
                 onClick={() => handleSelectStep(step)}
-                className="w-full p-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-purple-500/50 shadow-lg hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] transition-all text-white flex items-center gap-4 text-left active:scale-98 select-none"
+                className="w-full p-4 sm:p-5 rounded-2xl bg-[#FFFDF7] hover:bg-[#EAF2EE] border border-[#C8DDD4] hover:border-[#397F7A] shadow-sm transition-all text-[#263B42] flex items-center gap-4 text-left active:scale-98 select-none"
               >
-                <span className="text-4xl p-2 rounded-xl bg-slate-950 border border-slate-800">{step.icon}</span>
-                <span className="text-xl font-bold">{step.text}</span>
+                <span className="text-3xl sm:text-4xl p-2 rounded-xl bg-[#EAF2EE] border border-[#C8DDD4]">{step.icon}</span>
+                <span className="text-lg sm:text-xl font-bold">{step.text}</span>
               </button>
             ))}
           </div>
         </div>
       ) : (
         /* Completion Modal */
-        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.3)] text-center animate-fadeIn text-white">
-          <div className="text-7xl mb-4 animate-bounce">📝</div>
-          <h2 className="text-3xl font-black text-emerald-300 mb-2">
-            {resultData?.perfect ? "Flawless Sequence!" : "Activity Complete!"}
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-[#FFFDF7] border-2 border-[#8DB7A5] shadow-lg text-center animate-fadeIn text-[#263B42]">
+          <div className="text-6xl mb-3">📝</div>
+          <h2 className="text-3xl font-extrabold text-[#263B42] mb-1.5">
+            {resultData?.perfect ? "Flawless Order!" : "Activity Complete!"}
           </h2>
-          <p className="text-slate-300 font-medium mb-6">Great procedural memory and daily task reasoning.</p>
+          <p className="text-[#566D75] font-medium mb-6">Great procedural reasoning and memory.</p>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
-              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-extrabold text-[#4F8A5B]">{resultData?.accuracy}%</p>
             </div>
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Score</span>
-              <p className="text-3xl font-black text-blue-400">{resultData?.score}</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Score</span>
+              <p className="text-3xl font-extrabold text-[#397F7A]">{resultData?.score}</p>
             </div>
           </div>
 
           <div className="flex gap-3">
             <button 
               onClick={() => setupGame(difficulty)} 
-              className="flex-1 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#397F7A] hover:bg-[#2E6B66] text-white rounded-2xl font-bold shadow-sm transition-all active:scale-98"
             >
               Play Again
             </button>
             <Link 
               to="/patient/games" 
-              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#F7F3E8] hover:bg-[#EAF2EE] text-[#263B42] rounded-2xl font-bold border border-[#C8DDD4] shadow-sm transition-all flex items-center justify-center active:scale-98"
             >
-              All Games
+              All Activities
             </Link>
           </div>
         </div>

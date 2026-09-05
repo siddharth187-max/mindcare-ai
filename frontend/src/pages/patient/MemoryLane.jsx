@@ -61,7 +61,7 @@ const MemoryLane = () => {
         setQuizFeedback(null);
         setQuizFinished(false);
         setQuizMode(true);
-        speak('Let us play a friendly memory recall activity. Look at the photo and pick who it is.');
+        speak('Let us look at your family photos. Tap who is in each picture.');
       }
     } catch (err) {
       console.error('Failed to start quiz:', err);
@@ -69,7 +69,7 @@ const MemoryLane = () => {
   };
 
   const handleAnswerSelect = (option, question) => {
-    if (quizFeedback) return; // prevent multiple clicks
+    if (quizFeedback) return;
 
     if (option.isCorrect) {
       chime('success');
@@ -88,7 +88,7 @@ const MemoryLane = () => {
           setQuizFeedback(null);
         } else {
           setQuizFinished(true);
-          speak('Splendid job! You completed all the family memories today!');
+          speak('Splendid job! You remembered your family memories today!');
         }
       }, 2500);
     } else {
@@ -107,19 +107,19 @@ const MemoryLane = () => {
     : memories.filter(m => m.tags?.includes(selectedTag) || m.relationship === selectedTag);
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-5xl mx-auto pb-16">
+    <div className="space-y-8 animate-fadeIn max-w-5xl mx-auto pb-16 font-sans">
       <ConfettiCanvas active={showConfetti} />
 
       {/* Top Header Card */}
-      <div className="bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 p-6 sm:p-8 rounded-3xl border border-purple-800/40 shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black bg-purple-900/60 text-purple-300 border border-purple-500/40">
-            <span>🖼️ Digital Reminiscence Therapy</span>
+      <div className="bg-[#FFFDF7] border border-[#EADBCC] p-6 sm:p-8 rounded-3xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-[#EAF2EE] text-[#397F7A] border border-[#C8DDD4]">
+            <span>🖼️ Family Memory Album</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#263B42] tracking-tight">
             My Memory Lane
           </h1>
-          <p className="text-base text-purple-200/90 font-medium">
+          <p className="text-base text-[#566D75] font-medium">
             Cherished family stories, loved ones, and reassuring memories of home.
           </p>
         </div>
@@ -128,14 +128,14 @@ const MemoryLane = () => {
           <button
             type="button"
             onClick={startQuiz}
-            className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-base shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 flex items-center gap-2"
+            className="px-5 py-3 rounded-2xl bg-[#8DB7A5] hover:bg-[#79A391] text-[#263B42] font-bold text-base shadow-sm transition-all active:scale-95 flex items-center gap-2"
           >
             <span>✨</span>
             <span>Family Recall Quiz</span>
           </button>
           <Link
             to="/patient"
-            className="px-5 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-base transition-all flex items-center gap-1.5"
+            className="px-5 py-3 rounded-2xl bg-[#F7F3E8] hover:bg-[#EAF2EE] text-[#263B42] border border-[#C8DDD4] font-bold text-base transition-all flex items-center gap-1.5"
           >
             <span>← Dashboard</span>
           </Link>
@@ -144,15 +144,15 @@ const MemoryLane = () => {
 
       {/* QUIZ MODAL / OVERLAY */}
       {quizMode && (
-        <div className="bg-slate-900/95 border-2 border-emerald-500/60 p-6 sm:p-8 rounded-3xl shadow-[0_0_50px_rgba(16,185,129,0.25)] relative animate-fadeIn">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
+        <div className="bg-[#FFFDF7] border-2 border-[#8DB7A5] p-6 sm:p-8 rounded-3xl shadow-md relative animate-fadeIn">
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#EADBCC]">
             <div className="flex items-center gap-2">
               <span className="text-2xl">✨</span>
-              <h2 className="text-xl sm:text-2xl font-black text-white">Family Recall Quiz</h2>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#263B42]">Family Recall Quiz</h2>
             </div>
             <button
               onClick={() => setQuizMode(false)}
-              className="text-slate-400 hover:text-white text-sm font-bold bg-slate-800 px-3 py-1.5 rounded-xl"
+              className="text-[#566D75] hover:text-[#263B42] text-sm font-bold bg-[#F7F3E8] hover:bg-[#EAF2EE] px-3.5 py-1.5 rounded-xl border border-[#C8DDD4]"
             >
               ✕ Close Quiz
             </button>
@@ -161,7 +161,7 @@ const MemoryLane = () => {
           {!quizFinished && quizQuestions[currentQuestionIndex] && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               {/* Image Column */}
-              <div className="relative group overflow-hidden rounded-2xl border-2 border-purple-500/40 shadow-xl max-h-80 flex items-center justify-center bg-black/40">
+              <div className="relative group overflow-hidden rounded-2xl border border-[#C8DDD4] shadow-sm max-h-80 flex items-center justify-center bg-[#F7F3E8]">
                 <img
                   src={quizQuestions[currentQuestionIndex].imageUrl}
                   alt="Memory recall"
@@ -170,7 +170,7 @@ const MemoryLane = () => {
                 <button
                   type="button"
                   onClick={() => speak(quizQuestions[currentQuestionIndex].question)}
-                  className="absolute bottom-3 right-3 px-3.5 py-2 bg-slate-950/80 backdrop-blur-md rounded-xl text-xs font-bold text-purple-300 border border-purple-500/40 hover:text-white flex items-center gap-1.5"
+                  className="absolute bottom-3 right-3 px-3.5 py-2 bg-[#FFFDF7]/95 backdrop-blur-sm rounded-xl text-xs font-bold text-[#397F7A] border border-[#C8DDD4] shadow-sm hover:bg-[#EAF2EE] flex items-center gap-1.5"
                 >
                   <span>🔊 Hear Question</span>
                 </button>
@@ -178,20 +178,20 @@ const MemoryLane = () => {
 
               {/* Options Column */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs font-bold text-purple-300 uppercase tracking-wider">
+                <div className="flex items-center justify-between text-xs font-bold text-[#566D75] uppercase tracking-wider">
                   <span>Question {currentQuestionIndex + 1} of {quizQuestions.length}</span>
-                  <span>Score: {quizScore} Correct</span>
+                  <span className="text-[#397F7A]">Score: {quizScore} Correct</span>
                 </div>
 
-                <h3 className="text-xl sm:text-2xl font-black text-white">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-[#263B42]">
                   {quizQuestions[currentQuestionIndex].question}
                 </h3>
 
                 {quizFeedback && (
-                  <div className={`p-4 rounded-2xl text-sm font-black border ${
+                  <div className={`p-4 rounded-2xl text-sm font-bold border ${
                     quizFeedback.type === 'correct'
-                      ? 'bg-emerald-950/80 text-emerald-200 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                      : 'bg-amber-950/80 text-amber-200 border-amber-500/60'
+                      ? 'bg-[#EBF5ED] text-[#4F8A5B] border-[#B7D9BE]'
+                      : 'bg-[#FBF4E4] text-[#D9A441] border-[#EED7A6]'
                   }`}>
                     {quizFeedback.message}
                   </div>
@@ -203,10 +203,10 @@ const MemoryLane = () => {
                       key={idx}
                       type="button"
                       onClick={() => handleAnswerSelect(opt, quizQuestions[currentQuestionIndex])}
-                      className="w-full min-h-14 p-4 rounded-2xl text-left font-black text-base sm:text-lg bg-slate-800/80 hover:bg-purple-600/30 border-2 border-slate-700 hover:border-purple-400 text-white transition-all shadow-md active:scale-98 flex items-center justify-between"
+                      className="w-full min-h-14 p-4 rounded-2xl text-left font-bold text-base sm:text-lg bg-[#FFFDF7] hover:bg-[#EAF2EE] border-2 border-[#C8DDD4] hover:border-[#397F7A] text-[#263B42] transition-all shadow-sm active:scale-98 flex items-center justify-between"
                     >
                       <span>👤 {opt.label}</span>
-                      <span className="text-slate-400 text-sm">Select ➔</span>
+                      <span className="text-[#397F7A] text-sm">Select ➔</span>
                     </button>
                   ))}
                 </div>
@@ -217,18 +217,18 @@ const MemoryLane = () => {
           {quizFinished && (
             <div className="text-center py-8 space-y-4">
               <div className="text-6xl">🎉</div>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-[#263B42]">
                 Wonderful Memory Activity!
               </h3>
-              <p className="text-base text-purple-200 font-semibold max-w-md mx-auto">
+              <p className="text-base text-[#566D75] font-medium max-w-md mx-auto">
                 You correctly identified your family memories with a score of {quizScore} / {quizQuestions.length}.
               </p>
               <button
                 type="button"
                 onClick={() => setQuizMode(false)}
-                className="px-8 py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-lg shadow-lg active:scale-95 transition-all"
+                className="px-8 py-3.5 rounded-2xl bg-[#397F7A] hover:bg-[#2E6B66] text-white font-bold text-lg shadow-sm active:scale-95 transition-all"
               >
-                Back to Memory Gallery
+                Back to Album Gallery
               </button>
             </div>
           )}
@@ -238,16 +238,16 @@ const MemoryLane = () => {
       {/* Filter Tabs */}
       {allTags.length > 1 && (
         <div className="flex flex-wrap items-center gap-2 pb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-300 mr-2">Filter:</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#566D75] mr-2">Filter:</span>
           {allTags.map((tag) => (
             <button
               key={tag}
               type="button"
               onClick={() => setSelectedTag(tag)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                 selectedTag === tag
-                  ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                  ? 'bg-[#397F7A] text-white shadow-sm'
+                  : 'bg-[#FFFDF7] text-[#263B42] hover:bg-[#EAF2EE] border border-[#C8DDD4]'
               }`}
             >
               {tag === 'All' ? '🌟 All Memories' : tag}
@@ -258,12 +258,12 @@ const MemoryLane = () => {
 
       {/* Memory Cards Grid */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 font-bold">
-          <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="p-12 text-center text-[#263B42] font-bold">
+          <div className="w-10 h-10 border-4 border-[#8DB7A5] border-t-[#397F7A] rounded-full animate-spin mx-auto mb-4"></div>
           Loading memory cards...
         </div>
       ) : filteredMemories.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900/60 rounded-3xl border border-slate-800 text-slate-400">
+        <div className="p-12 text-center bg-[#FFFDF7] rounded-3xl border border-[#EADBCC] text-[#566D75]">
           <p className="text-lg font-bold">No memories found in this category.</p>
         </div>
       ) : (
@@ -271,28 +271,27 @@ const MemoryLane = () => {
           {filteredMemories.map((mem) => (
             <div
               key={mem._id}
-              className="bg-slate-900/90 backdrop-blur-xl rounded-3xl overflow-hidden border border-purple-900/40 shadow-xl hover:border-purple-500/50 transition-all flex flex-col justify-between group"
+              className="bg-[#FFFDF7] rounded-3xl overflow-hidden border border-[#EADBCC] shadow-sm hover:border-[#8DB7A5] hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
                 {/* Photo Header */}
-                <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-950">
+                <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-[#F7F3E8]">
                   <img
                     src={mem.imageUrl}
                     alt={mem.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.src = 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=600&q=80';
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
 
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-900/90 text-purple-200 backdrop-blur-md border border-purple-400/40 shadow-md">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FFFDF7]/95 text-[#263B42] border border-[#C8DDD4] shadow-sm">
                       👤 {mem.relationship || 'Family'}
                     </span>
                     {mem.year && (
-                      <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-900/90 text-slate-200 backdrop-blur-md border border-slate-700 shadow-md">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#F7F3E8]/95 text-[#566D75] border border-[#EADBCC] shadow-sm">
                         📅 {mem.year}
                       </span>
                     )}
@@ -300,11 +299,11 @@ const MemoryLane = () => {
                 </div>
 
                 {/* Content Body */}
-                <div className="p-6 space-y-3">
-                  <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-purple-300 transition-colors">
+                <div className="p-6 space-y-2.5">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-[#263B42]">
                     {mem.title}
                   </h3>
-                  <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
+                  <p className="text-base text-[#566D75] font-medium leading-relaxed">
                     {mem.caption}
                   </p>
                 </div>
@@ -315,10 +314,10 @@ const MemoryLane = () => {
                 <button
                   type="button"
                   onClick={() => handleSpeakMemory(mem)}
-                  className={`w-full min-h-12 py-3 px-4 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 ${
+                  className={`w-full min-h-12 py-3 px-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 ${
                     speakingId === mem._id
-                      ? 'bg-emerald-600 text-white animate-pulse'
-                      : 'bg-purple-600/20 hover:bg-purple-600 text-purple-200 hover:text-white border border-purple-500/40'
+                      ? 'bg-[#4F8A5B] text-white'
+                      : 'bg-[#397F7A] hover:bg-[#2E6B66] text-white'
                   }`}
                 >
                   <span className="text-xl">🔊</span>

@@ -49,62 +49,58 @@ const Results = () => {
     ? Math.round(history.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / totalSessions) 
     : 0;
 
-  const cardStyle = highContrast 
-    ? 'bg-black border-2 border-cyan-400 text-white' 
-    : 'bg-slate-900/90 border border-slate-800 text-white shadow-xl';
-
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn pb-16">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#EADBCC] pb-4">
         <Link 
           to="/patient" 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#263B42] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm sm:text-base transition-all flex items-center gap-2 active:scale-95"
         >
           ← Return Home
         </Link>
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-black text-white">📊 My Brain Progress</h1>
-          <p className="text-sm font-bold text-purple-300 mt-0.5">Summary of all your completed cognitive sessions</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#263B42]">📊 My Progress</h1>
+          <p className="text-sm font-medium text-[#566D75] mt-0.5">Summary of all completed cognitive activities</p>
         </div>
         <div className="w-28 hidden sm:block"></div>
       </div>
 
       {/* KPI Stats Highlights */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-6 rounded-3xl bg-slate-900/90 border border-purple-900/40 text-center shadow-lg">
-          <span className="text-xs font-black uppercase tracking-widest text-purple-300">Total Activities Played</span>
-          <p className="text-4xl font-black text-purple-400 mt-1">{totalSessions}</p>
-          <span className="text-xs text-slate-400 mt-1 block">Memory & Focus Sessions</span>
+        <div className="p-6 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#566D75]">Total Activities</span>
+          <p className="text-4xl font-extrabold text-[#397F7A] mt-1">{totalSessions}</p>
+          <span className="text-xs text-[#566D75] mt-1 block">Memory & Focus Sessions</span>
         </div>
 
-        <div className="p-6 rounded-3xl bg-slate-900/90 border border-emerald-900/40 text-center shadow-lg">
-          <span className="text-xs font-black uppercase tracking-widest text-emerald-300">Average Precision</span>
-          <p className="text-4xl font-black text-emerald-400 mt-1">{avgAccuracy}%</p>
-          <span className="text-xs text-slate-400 mt-1 block">Continuous Cognitive Metric</span>
+        <div className="p-6 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#566D75]">Average Accuracy</span>
+          <p className="text-4xl font-extrabold text-[#4F8A5B] mt-1">{avgAccuracy}%</p>
+          <span className="text-xs text-[#566D75] mt-1 block">Continuous Cognitive Metric</span>
         </div>
 
-        <div className="p-6 rounded-3xl bg-slate-900/90 border border-blue-900/40 text-center shadow-lg">
-          <span className="text-xs font-black uppercase tracking-widest text-blue-300">Adaptive Status</span>
-          <p className="text-3xl font-black text-blue-400 uppercase mt-2">Active</p>
-          <span className="text-xs text-slate-400 mt-1 block">Paced to Your Comfort</span>
+        <div className="p-6 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#566D75]">Adaptive Status</span>
+          <p className="text-3xl font-extrabold text-[#397F7A] uppercase mt-2">Active</p>
+          <span className="text-xs text-[#566D75] mt-1 block">Paced to Your Comfort</span>
         </div>
       </div>
 
       {error ? (
-        <div className="text-center p-8 bg-slate-900 border border-red-500/30 rounded-3xl text-red-400 font-bold text-xl">
+        <div className="text-center p-8 bg-[#FFFDF7] border border-[#E8B4B4] rounded-3xl text-[#C95C5C] font-bold text-lg">
           {error}
         </div>
       ) : history.length === 0 ? (
-        <div className={`text-center p-12 rounded-3xl ${cardStyle}`}>
-          <div className="text-7xl mb-4">🎯</div>
-          <p className="text-3xl font-extrabold text-white">No activities played yet.</p>
-          <p className="text-lg text-purple-300 mt-2">Head over to the Brain Games tab to start having fun!</p>
+        <div className="text-center p-12 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] shadow-sm">
+          <div className="text-6xl mb-3">🎯</div>
+          <p className="text-2xl font-extrabold text-[#263B42]">No activities played yet.</p>
+          <p className="text-base text-[#566D75] mt-1">Head over to Memory Games to start having fun!</p>
           <Link 
             to="/patient/games" 
-            className="mt-6 inline-block py-3 px-8 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
+            className="mt-6 inline-block py-3 px-8 bg-[#397F7A] hover:bg-[#2E6B66] text-white rounded-2xl font-bold shadow-sm transition-all active:scale-95"
           >
-            Play First Game ➔
+            Play First Activity ➔
           </Link>
         </div>
       ) : (
@@ -119,35 +115,35 @@ const Results = () => {
             return (
               <div 
                 key={index} 
-                className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 transition-all duration-200 shadow-xl flex flex-col justify-between"
+                className="p-6 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] hover:border-[#8DB7A5] transition-all duration-200 shadow-sm flex flex-col justify-between"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-2xl font-extrabold text-white">{formatGameType(game.gameType)}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase border ${
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-xl font-extrabold text-[#263B42]">{formatGameType(game.gameType)}</h3>
+                  <span className={`px-3 py-0.5 rounded-full text-xs font-bold uppercase border ${
                     game.difficulty === 'hard' 
-                    ? 'bg-rose-950 text-rose-300 border-rose-800' 
+                    ? 'bg-[#FAECEC] text-[#C95C5C] border-[#E8B4B4]' 
                     : game.difficulty === 'medium' 
-                    ? 'bg-amber-950 text-amber-300 border-amber-800' 
-                    : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                    ? 'bg-[#FBF4E4] text-[#D9A441] border-[#EED7A6]' 
+                    : 'bg-[#EBF5ED] text-[#4F8A5B] border-[#B7D9BE]'
                   }`}>
                     {game.difficulty || 'EASY'}
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3 my-4">
-                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase">Accuracy</span>
-                    <p className="text-2xl font-black text-emerald-400">{game.accuracy}%</p>
+                <div className="grid grid-cols-2 gap-3 my-3">
+                  <div className="p-3 bg-[#F7F3E8] rounded-2xl border border-[#EADBCC] text-center">
+                    <span className="text-xs font-bold text-[#566D75] uppercase">Accuracy</span>
+                    <p className="text-2xl font-extrabold text-[#4F8A5B]">{game.accuracy}%</p>
                   </div>
-                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase">Score</span>
-                    <p className="text-2xl font-black text-purple-400">{game.score}</p>
+                  <div className="p-3 bg-[#F7F3E8] rounded-2xl border border-[#EADBCC] text-center">
+                    <span className="text-xs font-bold text-[#566D75] uppercase">Score</span>
+                    <p className="text-2xl font-extrabold text-[#397F7A]">{game.score}</p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800 text-sm font-bold text-slate-400 flex justify-between">
+                <div className="pt-3 border-t border-[#EADBCC] text-sm font-semibold text-[#566D75] flex justify-between">
                   <span>📅 {dateStr}</span>
-                  <span>⏱️ {game.timeTaken ? `${game.timeTaken}s` : 'Completed'}</span>
+                  <span>⏱️ {game.timeTaken ? `${game.timeTaken}s` : 'Done'}</span>
                 </div>
               </div>
             );

@@ -1,97 +1,142 @@
 @import "tailwindcss";
 
-/* MindCare Dementia-Friendly & Technologically Aligned Design System */
+/* MindCare Dementia-Friendly Calming Visual Design System */
+
+@theme {
+  --color-primary-teal: #397F7A;
+  --color-teal-hover: #2E6B66;
+  --color-teal-light: #EBF3F2;
+  --color-teal-border: #BCD5D3;
+
+  --color-secondary-sage: #8DB7A5;
+  --color-sage-hover: #79A391;
+  --color-sage-light: #EBF3F0;
+  --color-sage-border: #C8DDD4;
+
+  --color-bg-cream: #F7F3E8;
+  --color-card-ivory: #FFFDF7;
+  --color-ivory-border: #EADBCC;
+
+  --color-deep-navy: #263B42;
+  --color-navy-muted: #566D75;
+  --color-navy-light: #849CA4;
+
+  --color-success-green: #4F8A5B;
+  --color-success-light: #EBF5ED;
+  --color-success-border: #B7D9BE;
+
+  --color-attention-amber: #D9A441;
+  --color-amber-light: #FBF4E4;
+  --color-amber-border: #EED7A6;
+
+  --color-critical-red: #C95C5C;
+  --color-critical-light: #FAECEC;
+  --color-critical-border: #E8B4B4;
+
+  --font-sans: 'Nunito Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
 :root {
-  --mc-cream: #F8F6F0;
-  --mc-sage: #2E7D32;
-  --mc-sage-light: #E8F5E9;
-  --mc-blue: #1565C0;
-  --mc-blue-light: #E3F2FD;
-  --mc-coral: #E65100;
-  --mc-coral-light: #FFF3E0;
-  --mc-danger: #C62828;
-  --mc-danger-light: #FFEBEE;
+  --primary-teal: #397F7A;
+  --secondary-sage: #8DB7A5;
+  --bg-cream: #F7F3E8;
+  --card-ivory: #FFFDF7;
+  --deep-navy: #263B42;
+  --success-green: #4F8A5B;
+  --attention-amber: #D9A441;
+  --critical-red: #C95C5C;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--mc-cream);
-  color: #1F2937;
+  font-family: var(--font-sans);
+  background-color: var(--bg-cream);
+  color: var(--deep-navy);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure all interactive elements have good focus visibility */
+/* Accessible focus ring */
 *:focus-visible {
-  outline: 4px solid var(--mc-blue);
+  outline: 3px solid #397F7A;
   outline-offset: 3px;
+}
+
+/* Calming card shadow & style */
+.card-ivory {
+  background-color: #FFFDF7;
+  border: 1px solid #EADBCC;
+  box-shadow: 0 4px 16px -2px rgba(38, 59, 66, 0.05), 0 2px 6px -1px rgba(38, 59, 66, 0.03);
+}
+
+.card-ivory-interactive {
+  background-color: #FFFDF7;
+  border: 1px solid #EADBCC;
+  box-shadow: 0 4px 16px -2px rgba(38, 59, 66, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-ivory-interactive:hover {
+  transform: translateY(-2px);
+  border-color: #8DB7A5;
+  box-shadow: 0 10px 24px -4px rgba(57, 127, 122, 0.12);
+}
+
+.card-ivory-interactive:active {
+  transform: translateY(0);
+}
+
+/* Primary Button */
+.btn-primary-teal {
+  background-color: #397F7A;
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: all 0.18s ease-in-out;
+}
+
+.btn-primary-teal:hover {
+  background-color: #2E6B66;
+  box-shadow: 0 4px 14px rgba(57, 127, 122, 0.25);
+}
+
+.btn-primary-teal:active {
+  transform: scale(0.98);
+}
+
+/* Secondary Button */
+.btn-secondary-sage {
+  background-color: #8DB7A5;
+  color: #263B42;
+  font-weight: 700;
+  transition: all 0.18s ease-in-out;
+}
+
+.btn-secondary-sage:hover {
+  background-color: #79A391;
+}
+
+.btn-secondary-sage:active {
+  transform: scale(0.98);
 }
 
 /* Micro-interaction & Keyframe Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes pulseMatch {
   0% { transform: scale(1); }
-  40% { transform: scale(1.15); }
+  40% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
 .animate-pulseMatch {
-  animation: pulseMatch 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes floatGentle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-.animate-float {
-  animation: floatGentle 3s ease-in-out infinite;
-}
-
-@keyframes softGlow {
-  0%, 100% { box-shadow: 0 4px 20px rgba(46, 125, 50, 0.15); }
-  50% { box-shadow: 0 8px 30px rgba(46, 125, 50, 0.28); }
-}
-
-.glow-emerald {
-  animation: softGlow 3s ease-in-out infinite;
-}
-
-/* Tactile interactive utilities */
-.card-interactive {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card-interactive:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
-}
-
-.card-interactive:active {
-  transform: translateY(-1px) scale(0.99);
-}
-
-.btn-interactive {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.btn-interactive:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15);
-}
-
-.btn-interactive:active {
-  transform: translateY(1px) scale(0.97);
-  filter: brightness(0.95);
+  animation: pulseMatch 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Confetti canvas */
@@ -107,35 +152,39 @@ body {
 
 /* High contrast mode overrides */
 body.high-contrast {
-  background-color: #0A0A0A;
-  color: #FFFFFF;
+  background-color: #000000 !important;
+  color: #FACC15 !important;
 }
 
+body.high-contrast .card-ivory,
+body.high-contrast .card-ivory-interactive,
+body.high-contrast .bg-\[\#FFFDF7\],
 body.high-contrast .bg-white {
-  background-color: #181818 !important;
+  background-color: #121212 !important;
+  border-color: #FACC15 !important;
+  color: #FACC15 !important;
 }
 
-body.high-contrast .border-gray-200 {
-  border-color: #FFFFFF !important;
+body.high-contrast button {
+  border: 2px solid #FACC15 !important;
 }
 
 /* Smooth custom scrollbars */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #F7F3E8;
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #C8DDD4;
   border-radius: 8px;
-  border: 2px solid #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #8DB7A5;
 }

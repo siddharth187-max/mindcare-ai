@@ -122,7 +122,7 @@ export default function MemoryGame() {
     const accuracy = Math.min(100, Math.max(50, Math.round((totalPairs / Math.max(totalPairs, finalMoves)) * 100)));
     const score = Math.round((accuracy * 10) / Math.max(1, timeTaken / 10));
 
-    const praises = ["Wonderful job!", "Great focus!", "Fantastic memory!", "Beautiful work!"];
+    const praises = ["Wonderful job!", "Great focus!", "Fantastic memory!", "Splendid matching!"];
     const praise = praises[Math.floor(Math.random() * praises.length)];
     speakText(praise);
 
@@ -149,99 +149,99 @@ export default function MemoryGame() {
   const cols = difficulty === 'easy' ? 'grid-cols-2' : difficulty === 'medium' ? 'grid-cols-3' : 'grid-cols-4';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn pb-16">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-16">
       {showConfetti && <ConfettiCanvas active={true} />}
       
       {/* Top Navigation & Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#EADBCC] pb-4">
         <Link 
           to="/patient/games" 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#263B42] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm sm:text-base transition-all flex items-center gap-2 active:scale-95"
         >
           ← Back to Activities
         </Link>
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-black text-white">Memory Card Match</h1>
-          <p className="text-xs font-bold text-purple-400 uppercase tracking-widest mt-1">Difficulty: {difficulty}</p>
+          <h1 className="text-3xl font-extrabold text-[#263B42]">Memory Card Match</h1>
+          <p className="text-xs font-bold text-[#397F7A] uppercase tracking-wider mt-0.5">Mode: {difficulty}</p>
         </div>
         <button 
           onClick={() => setupGame(difficulty)} 
-          className="px-5 py-2.5 bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/80 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-1.5 active:scale-95"
+          className="px-5 py-2.5 bg-[#EAF2EE] hover:bg-[#D7E8E0] text-[#397F7A] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-1.5 active:scale-95"
         >
-          🔄 Restart Shuffle
+          🔄 Shuffle
         </button>
       </div>
 
       {/* Game Stats Telemetry Banner */}
-      <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
-        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
-          <span className="text-xs font-bold text-slate-400 uppercase">Moves</span>
-          <p className="text-2xl font-black text-white">{moves}</p>
+      <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+        <div className="p-3 bg-[#FFFDF7] rounded-2xl border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold text-[#566D75] uppercase">Moves</span>
+          <p className="text-2xl font-extrabold text-[#263B42]">{moves}</p>
         </div>
-        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
-          <span className="text-xs font-bold text-slate-400 uppercase">Pairs</span>
-          <p className="text-2xl font-black text-emerald-400">{matchedPairs} / {cards.length / 2}</p>
+        <div className="p-3 bg-[#FFFDF7] rounded-2xl border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold text-[#566D75] uppercase">Pairs</span>
+          <p className="text-2xl font-extrabold text-[#4F8A5B]">{matchedPairs} / {cards.length / 2}</p>
         </div>
-        <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center">
-          <span className="text-xs font-bold text-slate-400 uppercase">Mode</span>
-          <p className="text-2xl font-black text-purple-400 uppercase">{difficulty}</p>
+        <div className="p-3 bg-[#FFFDF7] rounded-2xl border border-[#EADBCC] text-center shadow-sm">
+          <span className="text-xs font-bold text-[#566D75] uppercase">Level</span>
+          <p className="text-2xl font-extrabold text-[#397F7A] uppercase">{difficulty}</p>
         </div>
       </div>
 
       {/* Memory Card Grid */}
       {!completed ? (
-        <div className={`grid ${cols} gap-6 max-w-2xl w-full mx-auto mt-6`}>
+        <div className={`grid ${cols} gap-4 sm:gap-6 max-w-xl w-full mx-auto mt-6`}>
           {cards.map((card, idx) => (
             <div 
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className={`aspect-square rounded-3xl flex items-center justify-center text-7xl cursor-pointer transition-all duration-300 transform select-none ${
+              className={`aspect-square rounded-3xl flex items-center justify-center text-6xl sm:text-7xl cursor-pointer transition-all duration-200 transform select-none ${
                 card.isMatched 
-                ? 'bg-emerald-950/80 border-4 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-100 animate-pulseMatch'
+                ? 'bg-[#EBF5ED] border-4 border-[#4F8A5B] shadow-sm scale-100 animate-pulseMatch'
                 : card.isFlipped 
-                ? 'bg-slate-900 border-4 border-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.5)] scale-105'
-                : 'bg-gradient-to-br from-purple-900/80 via-slate-900 to-slate-950 hover:from-purple-800/80 hover:to-slate-900 border-2 border-purple-600/40 hover:border-purple-400 hover:scale-105 active:scale-95 shadow-xl'
+                ? 'bg-[#FFFDF7] border-4 border-[#397F7A] shadow-md scale-105'
+                : 'bg-[#397F7A] hover:bg-[#2E6B66] text-white border-2 border-[#2E6B66] hover:scale-105 active:scale-95 shadow-sm'
               }`}
             >
-              <span className={`transition-all duration-300 ${card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+              <span className={`transition-all duration-200 ${card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
                 {card.isFlipped || card.isMatched ? card.item : ''}
               </span>
               {!(card.isFlipped || card.isMatched) && (
-                <span className="text-4xl text-purple-400/80 drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">✨</span>
+                <span className="text-4xl text-white/90">🌿</span>
               )}
             </div>
           ))}
         </div>
       ) : (
         /* Completion Celebration Modal */
-        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-purple-500/50 shadow-[0_0_40px_rgba(168,85,247,0.3)] text-center animate-fadeIn text-white">
-          <div className="text-7xl mb-4 animate-bounce">🌟</div>
-          <h2 className="text-3xl font-black text-purple-300 mb-2">{resultData?.praise || 'Activity Completed!'}</h2>
-          <p className="text-slate-300 font-medium mb-6">All pairs matched with great cognitive focus.</p>
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-[#FFFDF7] border-2 border-[#8DB7A5] shadow-lg text-center animate-fadeIn text-[#263B42]">
+          <div className="text-6xl mb-3">🌟</div>
+          <h2 className="text-3xl font-extrabold text-[#263B42] mb-1.5">{resultData?.praise || 'Activity Completed!'}</h2>
+          <p className="text-[#566D75] font-medium mb-6">All pairs matched with great focus.</p>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
-              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-extrabold text-[#4F8A5B]">{resultData?.accuracy}%</p>
             </div>
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Time Taken</span>
-              <p className="text-3xl font-black text-blue-400">{resultData?.timeTaken}s</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Time Taken</span>
+              <p className="text-3xl font-extrabold text-[#397F7A]">{resultData?.timeTaken}s</p>
             </div>
           </div>
 
           <div className="flex gap-3">
             <button 
               onClick={() => setupGame(difficulty)} 
-              className="flex-1 py-3.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#397F7A] hover:bg-[#2E6B66] text-white rounded-2xl font-bold shadow-sm transition-all active:scale-98"
             >
               Play Again
             </button>
             <Link 
               to="/patient/games" 
-              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#F7F3E8] hover:bg-[#EAF2EE] text-[#263B42] rounded-2xl font-bold border border-[#C8DDD4] shadow-sm transition-all flex items-center justify-center active:scale-98"
             >
-              All Games
+              All Activities
             </Link>
           </div>
         </div>

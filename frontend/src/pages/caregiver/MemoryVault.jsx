@@ -116,17 +116,17 @@ const MemoryVault = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto pb-16">
+    <div className="space-y-6 animate-fadeIn max-w-6xl mx-auto pb-16">
       {/* Top Header */}
-      <div className="bg-slate-900/90 border border-purple-900/50 p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-[#FFFDF7] border border-[#EADBCC] p-6 sm:p-8 rounded-3xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black bg-purple-950/80 text-purple-300 border border-purple-500/40">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#8DB7A5]/20 text-[#397F7A] border border-[#8DB7A5]/40">
             <span>🖼️ Clinical Reminiscence Vault</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-black text-[#263B42] tracking-tight">
             Digital Memory Vault
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 font-medium">
+          <p className="text-base text-[#566D75] font-medium">
             Upload tagged family photos and comforting voice scripts to reduce sundowning & anxiety.
           </p>
         </div>
@@ -136,7 +136,7 @@ const MemoryVault = () => {
             <select
               value={selectedPatientId}
               onChange={(e) => setSelectedPatientId(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-slate-950 border border-purple-900 text-white text-sm font-bold focus:outline-none focus:border-purple-400"
+              className="px-4 py-3 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm font-bold focus:outline-none focus:border-[#397F7A]"
             >
               {patients.map((p) => (
                 <option key={p._id} value={p._id}>
@@ -149,7 +149,7 @@ const MemoryVault = () => {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm sm:text-base shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all active:scale-95 flex items-center gap-2"
+            className="px-6 py-3.5 rounded-2xl bg-[#397F7A] hover:bg-[#2E6B66] text-white font-bold text-sm sm:text-base shadow-sm transition-all active:scale-95 flex items-center gap-2"
           >
             <span>➕</span>
             <span>Add Family Memory</span>
@@ -158,31 +158,31 @@ const MemoryVault = () => {
       </div>
 
       {actionMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-sm font-bold shadow-md animate-fadeIn">
+        <div className="p-4 rounded-2xl bg-[#F0FDF4] border border-[#4F8A5B]/40 text-[#4F8A5B] text-sm font-bold shadow-sm animate-fadeIn">
           ✓ {actionMsg}
         </div>
       )}
 
       {/* Memory Cards Grid */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 font-bold">
-          <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="p-12 text-center text-[#566D75] font-bold">
+          <div className="w-10 h-10 border-4 border-[#397F7A] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           Loading memory cards...
         </div>
       ) : memories.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900/60 rounded-3xl border border-slate-800 text-slate-400 space-y-3">
-          <p className="text-xl font-bold text-white">No memories stored for this patient yet.</p>
-          <p className="text-sm text-slate-400">Click "+ Add Family Memory" to upload their first cherished photo.</p>
+        <div className="p-12 text-center bg-[#FFFDF7] rounded-3xl border border-[#EADBCC] text-[#566D75] space-y-3 shadow-sm">
+          <p className="text-xl font-bold text-[#263B42]">No memories stored for this patient yet.</p>
+          <p className="text-sm text-[#566D75]">Click "+ Add Family Memory" to upload their first cherished photo.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {memories.map((mem) => (
             <div
               key={mem._id}
-              className="bg-slate-900/90 rounded-3xl overflow-hidden border border-purple-900/40 shadow-xl hover:border-purple-500/50 transition-all flex flex-col justify-between"
+              className="bg-[#FFFDF7] rounded-3xl overflow-hidden border border-[#EADBCC] shadow-sm hover:shadow-md hover:border-[#8DB7A5] transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="relative h-48 w-full bg-slate-950 overflow-hidden">
+                <div className="relative h-48 w-full bg-[#F7F3E8] overflow-hidden">
                   <img
                     src={mem.imageUrl}
                     alt={mem.title}
@@ -191,12 +191,12 @@ const MemoryVault = () => {
                       e.target.src = 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=600&q=80';
                     }}
                   />
-                  <div className="absolute top-2 left-2 flex gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-950/90 text-purple-200 border border-purple-500/40">
+                  <div className="absolute top-3 left-3 flex gap-1.5">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FFFDF7]/90 text-[#397F7A] border border-[#8DB7A5]/50 shadow-sm">
                       {mem.relationship}
                     </span>
                     {mem.year && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-900/90 text-slate-300 border border-slate-700">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FFFDF7]/90 text-[#263B42] border border-[#EADBCC] shadow-sm">
                         {mem.year}
                       </span>
                     )}
@@ -204,30 +204,30 @@ const MemoryVault = () => {
                 </div>
 
                 <div className="p-5 space-y-2">
-                  <h3 className="text-lg font-black text-white">{mem.title}</h3>
-                  <p className="text-xs text-slate-300 line-clamp-3">{mem.caption}</p>
+                  <h3 className="text-lg font-bold text-[#263B42]">{mem.title}</h3>
+                  <p className="text-xs text-[#566D75] line-clamp-3 leading-relaxed">{mem.caption}</p>
                   
                   {mem.audioPrompt && (
-                    <div className="p-2.5 rounded-xl bg-purple-950/40 border border-purple-900/40 text-[11px] text-purple-200 mt-2">
-                      <span className="font-bold">🔊 Voice Reassurance: </span>
+                    <div className="p-3 rounded-2xl bg-[#8DB7A5]/15 border border-[#8DB7A5]/30 text-xs text-[#263B42] mt-2">
+                      <span className="font-bold text-[#397F7A]">🔊 Voice Prompt: </span>
                       <span className="italic">{mem.audioPrompt}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="p-5 pt-0 flex items-center justify-between border-t border-slate-800/80 mt-3">
+              <div className="p-5 pt-0 flex items-center justify-between border-t border-[#EADBCC] mt-3">
                 <button
                   type="button"
                   onClick={() => handlePreviewVoice(mem.audioPrompt || mem.caption)}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white text-xs font-bold transition-colors flex items-center gap-1"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#8DB7A5]/20 hover:bg-[#8DB7A5]/35 text-[#397F7A] text-xs font-bold transition-colors flex items-center gap-1.5"
                 >
                   <span>🔊 Test Audio</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteMemory(mem._id)}
-                  className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold transition-colors"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#FFF5F5] hover:bg-[#FEE2E2] text-[#C95C5C] text-xs font-bold transition-colors border border-[#C95C5C]/30"
                 >
                   🗑️ Delete
                 </button>
@@ -239,16 +239,16 @@ const MemoryVault = () => {
 
       {/* ADD MEMORY MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-purple-500/40 p-6 sm:p-8 rounded-3xl max-w-xl w-full shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h2 className="text-xl font-black text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#263B42]/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#FFFDF7] border border-[#EADBCC] p-6 sm:p-8 rounded-3xl max-w-xl w-full shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EADBCC]">
+              <h2 className="text-xl font-bold text-[#263B42] flex items-center gap-2">
                 <span>➕</span>
                 <span>Add Reminiscence Memory</span>
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white text-sm font-bold bg-slate-800 px-3 py-1 rounded-xl"
+                className="text-[#566D75] hover:text-[#263B42] text-sm font-bold bg-[#F7F3E8] px-3 py-1 rounded-xl"
               >
                 ✕
               </button>
@@ -256,7 +256,7 @@ const MemoryVault = () => {
 
             <form onSubmit={handleCreateMemory} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                   Memory Title *
                 </label>
                 <input
@@ -264,20 +264,20 @@ const MemoryVault = () => {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                   placeholder="e.g. Grandson Aarav's Graduation"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                  <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                     Relationship / Tag
                   </label>
                   <select
                     value={relationship}
                     onChange={(e) => setRelationship(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                   >
                     <option value="Grandson">Grandson</option>
                     <option value="Granddaughter">Granddaughter</option>
@@ -291,21 +291,21 @@ const MemoryVault = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                  <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                     Era / Year
                   </label>
                   <input
                     type="text"
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                     placeholder="e.g. 1998, 2018"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                   Photo URL *
                 </label>
                 <input
@@ -313,7 +313,7 @@ const MemoryVault = () => {
                   required
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                   placeholder="https://images.unsplash.com/... or image link"
                 />
                 {/* Preset quick image suggestions */}
@@ -321,21 +321,21 @@ const MemoryVault = () => {
                   <button
                     type="button"
                     onClick={() => setImageUrl('https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=600&q=80')}
-                    className="text-[11px] px-2 py-1 rounded bg-slate-800 text-purple-300 hover:bg-slate-700"
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-[#F7F3E8] text-[#397F7A] font-bold hover:bg-[#EADBCC] border border-[#EADBCC]"
                   >
                     Preset: Grandchild 👦
                   </button>
                   <button
                     type="button"
                     onClick={() => setImageUrl('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80')}
-                    className="text-[11px] px-2 py-1 rounded bg-slate-800 text-purple-300 hover:bg-slate-700"
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-[#F7F3E8] text-[#397F7A] font-bold hover:bg-[#EADBCC] border border-[#EADBCC]"
                   >
                     Preset: Mountains 🏔️
                   </button>
                   <button
                     type="button"
                     onClick={() => setImageUrl('https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80')}
-                    className="text-[11px] px-2 py-1 rounded bg-slate-800 text-purple-300 hover:bg-slate-700"
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-[#F7F3E8] text-[#397F7A] font-bold hover:bg-[#EADBCC] border border-[#EADBCC]"
                   >
                     Preset: Golden Dog 🐕
                   </button>
@@ -343,43 +343,43 @@ const MemoryVault = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                   Story / Caption Description
                 </label>
                 <textarea
                   rows="2"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                  className="w-full px-4 py-2 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                   placeholder="Brief memory context..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-purple-200 mb-1">
+                <label className="block text-xs font-bold uppercase text-[#566D75] mb-1">
                   Voice Reassurance Script (Read Aloud to Patient)
                 </label>
                 <textarea
                   rows="2"
                   value={audioPrompt}
                   onChange={(e) => setAudioPrompt(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-purple-400"
+                  className="w-full px-4 py-2 rounded-xl bg-white border border-[#EADBCC] text-[#263B42] text-sm focus:outline-none focus:border-[#397F7A]"
                   placeholder="e.g. This is your grandson Aarav. He loves you very much and is studying engineering."
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#EADBCC]">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold hover:bg-slate-700"
+                  className="px-5 py-2.5 rounded-xl bg-[#F7F3E8] text-[#566D75] text-sm font-bold hover:bg-[#EADBCC]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-black shadow-lg"
+                  className="px-6 py-2.5 rounded-xl bg-[#397F7A] hover:bg-[#2E6B66] text-white text-sm font-bold shadow-sm"
                 >
                   {submitting ? 'Saving...' : 'Save to Memory Vault'}
                 </button>

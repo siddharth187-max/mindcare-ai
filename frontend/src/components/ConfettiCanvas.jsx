@@ -22,7 +22,7 @@ const ConfettiCanvas = forwardRef((props, ref) => {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height * 0.4,
         size: Math.random() * 8 + 6,
-        color: ['#1565C0', '#2E7D32', '#F57C00', '#E91E63', '#9C27B0', '#FFD700'][Math.floor(Math.random() * 6)],
+        color: ['#397F7A', '#8DB7A5', '#4F8A5B', '#D9A441', '#263B42', '#79A391'][Math.floor(Math.random() * 6)],
         speedY: Math.random() * 3 + 2,
         speedX: Math.random() * 4 - 2,
         rotation: Math.random() * 360

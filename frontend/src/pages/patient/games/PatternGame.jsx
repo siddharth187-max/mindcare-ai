@@ -5,10 +5,10 @@ import { playChime, speakText } from '../../../hooks/useVoice';
 import ConfettiCanvas from '../../../components/ConfettiCanvas';
 
 const COLORS = [
-  { id: 'blue', name: 'Blue Chime', color: 'bg-blue-600', active: 'bg-cyan-400 ring-8 ring-cyan-300 shadow-[0_0_30px_rgba(6,182,212,0.8)]', hz: 261.63 },
-  { id: 'green', name: 'Green Chime', color: 'bg-emerald-600', active: 'bg-emerald-300 ring-8 ring-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.8)]', hz: 329.63 },
-  { id: 'yellow', name: 'Amber Chime', color: 'bg-amber-500', active: 'bg-yellow-200 ring-8 ring-yellow-200 shadow-[0_0_30px_rgba(250,204,21,0.8)]', hz: 392.00 },
-  { id: 'red', name: 'Crimson Chime', color: 'bg-rose-600', active: 'bg-rose-300 ring-8 ring-rose-300 shadow-[0_0_30px_rgba(244,63,94,0.8)]', hz: 523.25 }
+  { id: 'blue', name: 'Blue Bell', color: 'bg-[#4A7C9B]', active: 'bg-[#689DBE] ring-8 ring-[#BCD5D3] scale-95', hz: 261.63 },
+  { id: 'green', name: 'Sage Bell', color: 'bg-[#8DB7A5]', active: 'bg-[#A9CFBF] ring-8 ring-[#C8DDD4] scale-95', hz: 329.63 },
+  { id: 'yellow', name: 'Amber Bell', color: 'bg-[#D9A441]', active: 'bg-[#ECC16E] ring-8 ring-[#EED7A6] scale-95', hz: 392.00 },
+  { id: 'red', name: 'Muted Rose Bell', color: 'bg-[#C95C5C]', active: 'bg-[#E08585] ring-8 ring-[#E8B4B4] scale-95', hz: 523.25 }
 ];
 
 export default function PatternGame() {
@@ -95,7 +95,7 @@ export default function PatternGame() {
 
     setIsPlaying(false);
     isLocked.current = false;
-    setStatusText("Your turn! Tap the colored chimes in order.");
+    setStatusText("Your turn! Tap the colored bells in order.");
     speakText("Your turn");
   };
 
@@ -180,43 +180,43 @@ export default function PatternGame() {
       {showConfetti && <ConfettiCanvas active={true} />}
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-900/30 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#EADBCC] pb-4">
         <Link 
           to="/patient/games" 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all flex items-center gap-2 active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#263B42] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm sm:text-base transition-all flex items-center gap-2 active:scale-95"
         >
           ← Back to Activities
         </Link>
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-black text-white">Melody & Chime Patterns</h1>
-          <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mt-1">Round {round} of {targetRounds}</p>
+          <h1 className="text-3xl font-extrabold text-[#263B42]">Melody & Chime Patterns</h1>
+          <p className="text-xs font-bold text-[#D9A441] uppercase tracking-wider mt-0.5">Round {round} of {targetRounds}</p>
         </div>
         <button 
           onClick={resetGame} 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
+          className="px-5 py-2.5 bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#566D75] border border-[#C8DDD4] rounded-2xl shadow-sm font-bold text-sm transition-all active:scale-95"
         >
           🔄 Restart
         </button>
       </div>
       
       {!completed ? (
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
-          {/* Status Telemetry Banner */}
-          <div className="bg-slate-900/90 border border-purple-900/40 p-5 rounded-2xl shadow-xl mb-8 text-center w-full">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-purple-200">{statusText}</h2>
+        <div className="flex flex-col items-center w-full max-w-xl mx-auto">
+          {/* Status Banner */}
+          <div className="bg-[#FFFDF7] border border-[#EADBCC] p-5 rounded-2xl shadow-sm mb-8 text-center w-full">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#263B42]">{statusText}</h2>
           </div>
           
-          {/* Glowing 4-Pad Arcade Grid */}
-          <div className="grid grid-cols-2 gap-6 w-full max-w-md mb-8">
+          {/* 4-Pad Bell Grid */}
+          <div className="grid grid-cols-2 gap-5 w-full max-w-sm mb-8">
             {COLORS.map((c) => (
               <button
                 key={c.id}
                 onMouseDown={() => handleColorClick(c.id, c.hz)}
-                className={`aspect-square rounded-3xl transition-all duration-150 select-none ${
+                className={`aspect-square rounded-3xl transition-all duration-150 select-none shadow-sm ${
                   activeColor === c.id 
-                  ? c.active + ' scale-95 animate-pulseMatch' 
-                  : c.color + ' shadow-2xl hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:scale-103 active:scale-95 border-2 border-white/20'
-                } ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                  ? c.active 
+                  : c.color + ' hover:opacity-90 hover:scale-102 active:scale-95'
+                } ${isLocked.current && !isPlaying && activeColor !== c.id ? 'opacity-85 cursor-not-allowed' : 'cursor-pointer'}`}
                 aria-label={`Play ${c.name}`}
               />
             ))}
@@ -225,7 +225,7 @@ export default function PatternGame() {
           {!hasStarted && (
             <button 
               onClick={() => startRound()}
-              className="py-4 px-10 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-2xl text-2xl font-black shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all hover:scale-105 active:scale-95"
+              className="py-4 px-10 bg-[#397F7A] hover:bg-[#2E6B66] text-white rounded-2xl text-xl font-bold shadow-sm transition-all hover:scale-102 active:scale-98"
             >
               ▶ Start Melody Game
             </button>
@@ -233,34 +233,34 @@ export default function PatternGame() {
         </div>
       ) : (
         /* Completion Modal */
-        <div className="max-w-md mx-auto p-8 rounded-3xl bg-slate-900 border-2 border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.3)] text-center animate-fadeIn text-white">
-          <div className="text-7xl mb-4 animate-bounce">🎵</div>
-          <h2 className="text-3xl font-black text-cyan-300 mb-2">Melodic Master!</h2>
-          <p className="text-slate-300 font-medium mb-6">You repeated all musical sequences with great focus.</p>
+        <div className="max-w-md mx-auto p-8 rounded-3xl bg-[#FFFDF7] border-2 border-[#8DB7A5] shadow-lg text-center animate-fadeIn text-[#263B42]">
+          <div className="text-6xl mb-3">🎵</div>
+          <h2 className="text-3xl font-extrabold text-[#263B42] mb-1.5">Melody Completed!</h2>
+          <p className="text-[#566D75] font-medium mb-6">You repeated all musical sequences with great focus.</p>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Accuracy</span>
-              <p className="text-3xl font-black text-emerald-400">{resultData?.accuracy}%</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Accuracy</span>
+              <p className="text-3xl font-extrabold text-[#4F8A5B]">{resultData?.accuracy}%</p>
             </div>
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Mistakes</span>
-              <p className="text-3xl font-black text-blue-400">{resultData?.mistakes}</p>
+            <div className="bg-[#F7F3E8] p-4 rounded-2xl border border-[#EADBCC]">
+              <span className="text-xs text-[#566D75] uppercase font-bold">Mistakes</span>
+              <p className="text-3xl font-extrabold text-[#397F7A]">{resultData?.mistakes}</p>
             </div>
           </div>
 
           <div className="flex gap-3">
             <button 
               onClick={resetGame} 
-              className="flex-1 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#397F7A] hover:bg-[#2E6B66] text-white rounded-2xl font-bold shadow-sm transition-all active:scale-98"
             >
               Play Again
             </button>
             <Link 
               to="/patient/games" 
-              className="flex-1 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center active:scale-95"
+              className="flex-1 py-3.5 px-4 bg-[#F7F3E8] hover:bg-[#EAF2EE] text-[#263B42] rounded-2xl font-bold border border-[#C8DDD4] shadow-sm transition-all flex items-center justify-center active:scale-98"
             >
-              All Games
+              All Activities
             </Link>
           </div>
         </div>

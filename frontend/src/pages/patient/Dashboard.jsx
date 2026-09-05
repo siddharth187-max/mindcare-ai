@@ -20,7 +20,6 @@ const Dashboard = () => {
 
   // Active Alert Modal State for Patient
   const [activeAlarmReminder, setActiveAlarmReminder] = useState(null);
-  const promptedIds = useRef(new Set());
   const lastPromptTime = useRef({});
 
   const { user } = useAuth();
@@ -53,7 +52,7 @@ const Dashboard = () => {
             playPop();
             setTimeout(() => {
               const count = (dueReminder.promptCount || 0) + 1;
-              speak(`Gentle reminder: ${dueReminder.title}. Alert ${Math.min(3, count)} of 3. Please tap I Did This.`);
+              speak(`Gentle reminder: ${dueReminder.title}. Please tap I Did This.`);
             }, 600);
           }
 
@@ -143,21 +142,21 @@ const Dashboard = () => {
     lastPromptTime.current[activeAlarmReminder._id] = Date.now() + 60000;
     setActiveAlarmReminder(null);
     if (soundEnabled) {
-      speak("Reminder snoozed. We will gently remind you again shortly.");
+      speak("Reminder snoozed. We will remind you again in a moment.");
     }
   };
 
   const handleResetRoutinesFromDashboard = async () => {
     if (!patient?._id && !patient?.id) return;
-    if (!window.confirm("Reset all today's routine tasks to pending so you can do them again?")) return;
+    if (!window.confirm("Reset all today's routine tasks so you can check them off again?")) return;
     setResettingRoutine(true);
     try {
       const pid = patient._id || patient.id;
       await api.post(`/routines/reset/${pid}`);
       if (soundEnabled) {
-        speak("Your routine tasks have been reset for you!");
+        speak("Your routine tasks have been reset for today!");
       }
-      alert("✅ All routine tasks have been reset to pending!");
+      alert("✅ Routine tasks reset to active!");
     } catch (e) {
       console.error("Error resetting routines:", e);
     } finally {
@@ -166,10 +165,10 @@ const Dashboard = () => {
   };
 
   const getPeriod = (hour) => {
-    if (hour >= 5 && hour < 12) return { name: 'Morning', icon: '🌅', color: 'from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30' };
-    if (hour >= 12 && hour < 17) return { name: 'Afternoon', icon: '☀️', color: 'from-blue-500/20 to-cyan-500/20 text-cyan-300 border-cyan-500/30' };
-    if (hour >= 17 && hour < 21) return { name: 'Evening', icon: '🌆', color: 'from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30' };
-    return { name: 'Night', icon: '🌙', color: 'from-indigo-600/30 to-purple-900/30 text-indigo-300 border-indigo-500/30' };
+    if (hour >= 5 && hour < 12) return { name: 'Morning', icon: '🌅' };
+    if (hour >= 12 && hour < 17) return { name: 'Afternoon', icon: '☀️' };
+    if (hour >= 17 && hour < 21) return { name: 'Evening', icon: '🌆' };
+    return { name: 'Night', icon: '🌙' };
   };
 
   const period = getPeriod(time.getHours());
@@ -187,49 +186,39 @@ const Dashboard = () => {
   };
 
   if (loading) return (
-    <div className="p-12 text-center text-purple-300 flex flex-col items-center gap-3">
-      <span className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></span>
-      <span className="text-lg font-bold">Connecting to MindCare AI...</span>
+    <div className="p-12 text-center text-[#263B42] flex flex-col items-center gap-3">
+      <span className="w-10 h-10 border-4 border-[#8DB7A5] border-t-[#397F7A] rounded-full animate-spin"></span>
+      <span className="text-xl font-bold">Connecting to MindCare...</span>
     </div>
   );
-
-  const cardStyle = highContrast 
-    ? 'bg-black border-2 border-cyan-400 text-white' 
-    : 'bg-slate-900/90 border border-slate-800 text-white shadow-xl';
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto animate-fadeIn pb-16">
       
-      {/* 🔔 POPPING / FLASH REMINDER ALARM MODAL */}
+      {/* 🔔 REMINDER ALERT MODAL */}
       {activeAlarmReminder && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="max-w-lg w-full rounded-3xl bg-slate-950 border-4 border-amber-500 shadow-[0_0_60px_rgba(245,158,11,0.5)] p-6 sm:p-8 text-center relative overflow-hidden animate-pulse">
-            <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-5xl shadow-[0_0_30px_rgba(245,158,11,0.8)]">
+        <div className="fixed inset-0 z-50 bg-[#263B42]/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-lg w-full rounded-3xl bg-[#FFFDF7] border-2 border-[#D9A441] shadow-xl p-6 sm:p-8 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-[#FBF4E4] border border-[#EED7A6] flex items-center justify-center text-4xl text-[#D9A441]">
               🔔
             </div>
 
-            <div className="inline-block px-4 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs sm:text-sm font-black uppercase tracking-wider mb-3">
-              Alert {(activeAlarmReminder.promptCount || 1)} of 3 • Action Required
+            <div className="inline-block px-4 py-1 rounded-full bg-[#FBF4E4] text-[#D9A441] border border-[#EED7A6] text-xs sm:text-sm font-bold uppercase tracking-wider mb-3">
+              Gentle Reminder
             </div>
 
-            <h2 className="text-2xl sm:text-4xl font-black text-white mb-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#263B42] mb-2">
               {activeAlarmReminder.title}
             </h2>
 
-            <p className="text-base sm:text-lg text-amber-200 font-bold mb-6">
+            <p className="text-base sm:text-lg text-[#566D75] font-semibold mb-6">
               Scheduled for: {new Date(activeAlarmReminder.scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
             </p>
-
-            {(activeAlarmReminder.promptCount || 1) >= 3 && (
-              <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-2xl mb-6 text-rose-300 text-xs sm:text-sm font-bold">
-                ⚠️ Final Alert: If not acknowledged, your caregiver will be notified with sound immediately.
-              </div>
-            )}
 
             <div className="space-y-3">
               <button
                 onClick={() => handleCompleteReminder(activeAlarmReminder)}
-                className="w-full min-h-16 py-4 px-8 rounded-2xl text-xl sm:text-2xl font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.7)] transition-all active:scale-95 flex items-center justify-center gap-3"
+                className="w-full min-h-16 py-4 px-8 rounded-2xl text-xl font-bold bg-[#4F8A5B] hover:bg-[#43774E] text-white shadow-sm transition-all active:scale-98 flex items-center justify-center gap-3"
               >
                 <span>✅</span>
                 <span>I Did This (Mark Done)</span>
@@ -242,15 +231,15 @@ const Dashboard = () => {
                       playPop();
                       speak(`Reminder: ${activeAlarmReminder.title}`);
                     }}
-                    className="flex-1 py-3 px-4 rounded-xl bg-slate-900 border border-slate-700 text-amber-300 font-bold text-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-3 px-4 rounded-xl bg-[#F7F3E8] border border-[#C8DDD4] text-[#263B42] font-bold text-sm hover:bg-[#EAF2EE] transition-all flex items-center justify-center gap-2"
                   >
                     <span>🔊</span>
-                    <span>Replay Sound</span>
+                    <span>Replay Audio</span>
                   </button>
                 )}
                 <button
                   onClick={handleSnooze}
-                  className="flex-1 py-3 px-4 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 font-bold text-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#F7F3E8] border border-[#C8DDD4] text-[#566D75] font-bold text-sm hover:bg-[#EAF2EE] transition-all flex items-center justify-center gap-2"
                 >
                   <span>⏰</span>
                   <span>Snooze (1 Min)</span>
@@ -263,21 +252,21 @@ const Dashboard = () => {
 
       {/* 🔗 LINK CAREGIVER MODAL */}
       {showLinkModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="max-w-md w-full rounded-3xl bg-slate-900 border-2 border-purple-500/50 p-6 sm:p-8 text-white shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-[#263B42]/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] p-6 sm:p-8 text-[#263B42] shadow-xl">
             <div className="text-center mb-5">
-              <span className="text-4xl p-2.5 rounded-2xl bg-purple-500/20 border border-purple-500/30 inline-block mb-2">
+              <span className="text-4xl p-2.5 rounded-2xl bg-[#EAF2EE] text-[#397F7A] border border-[#C8DDD4] inline-block mb-2">
                 🩺
               </span>
-              <h3 className="text-2xl font-black">Connect Your Caregiver</h3>
-              <p className="text-xs sm:text-sm text-purple-200 mt-1">
-                Enter your caregiver's registered email to link your account for live safety monitoring.
+              <h3 className="text-2xl font-extrabold">Connect Your Caregiver</h3>
+              <p className="text-xs sm:text-sm text-[#566D75] mt-1">
+                Enter your caregiver's email to link your account for live care coordination.
               </p>
             </div>
 
             <form onSubmit={handleLinkCaregiver} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1">
+                <label className="block text-sm font-bold text-[#263B42] mb-1">
                   Caregiver Email Address
                 </label>
                 <input
@@ -285,18 +274,18 @@ const Dashboard = () => {
                   required
                   value={caregiverEmailInput}
                   onChange={(e) => setCaregiverEmailInput(e.target.value)}
-                  placeholder="e.g. caregiver.demo@mindcare.local"
-                  className="w-full p-3.5 rounded-xl bg-slate-950 border border-purple-900/60 text-white font-medium outline-none focus:border-purple-400"
+                  placeholder="e.g. caregiver@mindcare.com"
+                  className="w-full p-3.5 rounded-xl bg-[#FFFDF7] border border-[#C8DDD4] text-[#263B42] font-medium outline-none focus:border-[#397F7A]"
                 />
               </div>
 
               {patient?.pairCode && (
-                <div className="p-3 bg-purple-950/40 border border-purple-900/60 rounded-xl text-center">
-                  <span className="text-xs text-purple-300 block font-semibold">Your Quick Pairing Code</span>
-                  <span className="text-xl font-mono font-black text-amber-300 tracking-wider">
+                <div className="p-3.5 bg-[#F7F3E8] border border-[#EADBCC] rounded-2xl text-center">
+                  <span className="text-xs text-[#566D75] block font-semibold">Your Quick Pairing Code</span>
+                  <span className="text-2xl font-mono font-extrabold text-[#397F7A] tracking-wider">
                     {patient.pairCode}
                   </span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">Your caregiver can also enter this code from their console.</span>
+                  <span className="text-[11px] text-[#566D75] block mt-0.5">Your caregiver can also enter this code from their portal.</span>
                 </div>
               )}
 
@@ -304,14 +293,14 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => setShowLinkModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm"
+                  className="flex-1 py-3 rounded-xl bg-[#F7F3E8] hover:bg-[#EAF2EE] border border-[#C8DDD4] text-[#566D75] font-bold text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={linkingLoading}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white font-extrabold text-sm shadow-md active:scale-95 transition-all"
+                  className="flex-1 py-3 rounded-xl bg-[#397F7A] hover:bg-[#2E6B66] text-white font-bold text-sm shadow-sm active:scale-98 transition-all"
                 >
                   {linkingLoading ? 'Connecting...' : 'Link Caregiver ✓'}
                 </button>
@@ -322,59 +311,56 @@ const Dashboard = () => {
       )}
 
       {/* Top Orientation & Live Clock Card */}
-      <div className={`p-6 sm:p-10 rounded-3xl ${cardStyle} shadow-[0_0_30px_rgba(147,51,234,0.15)] relative overflow-hidden`}>
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="text-center relative z-10">
+      <div className="p-6 sm:p-10 rounded-3xl bg-[#FFFDF7] border border-[#EADBCC] shadow-sm relative overflow-hidden">
+        <div className="text-center">
           <div className="flex items-center justify-center gap-3 flex-wrap mb-4">
-            <div className={`inline-flex items-center gap-2.5 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r border shadow-sm ${period.color}`}>
-              <span className="text-2xl">{period.icon}</span>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-base font-bold bg-[#EAF2EE] text-[#397F7A] border border-[#C8DDD4]">
+              <span className="text-xl">{period.icon}</span>
               <span className="uppercase tracking-wider">{period.name} Time</span>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-base sm:text-lg font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
-              <span className="text-2xl animate-bounce">🔥</span>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-base font-bold bg-[#FBF4E4] text-[#D9A441] border border-[#EED7A6]">
+              <span className="text-xl">🔥</span>
               <span>{patient?.currentStreak || 1}-Day Streak</span>
             </div>
           </div>
 
-          <div className="my-2">
-            <p className="text-4xl sm:text-7xl font-black tracking-tight text-white font-mono drop-shadow-md">
+          <div className="my-3">
+            <p className="text-4xl sm:text-7xl font-extrabold tracking-tight text-[#263B42] font-sans">
               {formattedTime}
             </p>
-            <p className="text-lg sm:text-2xl font-bold text-purple-300 mt-2">
+            <p className="text-lg sm:text-2xl font-bold text-[#566D75] mt-2">
               {formattedDate}
             </p>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold mt-6 mb-3 text-white">
-            Good {period.name}, <span className="text-purple-400">{patientDisplayName}</span>!
+          <h1 className="text-3xl sm:text-5xl font-extrabold mt-6 mb-3 text-[#263B42]">
+            Good {period.name}, <span className="text-[#397F7A]">{patientDisplayName}</span>!
           </h1>
           
-          <div className="max-w-2xl mx-auto p-4 rounded-2xl bg-slate-950/80 border border-purple-900/40 my-6 shadow-inner">
-            <p className="text-xl sm:text-2xl font-bold text-purple-200 flex items-center justify-center gap-2.5">
+          <div className="max-w-2xl mx-auto p-4 rounded-2xl bg-[#F7F3E8] border border-[#EADBCC] my-5">
+            <p className="text-lg sm:text-xl font-bold text-[#263B42] flex items-center justify-center gap-2.5">
               <span>🏡</span>
-              <span>You are in your home, safe and comfortable.</span>
+              <span>You are in your home, safe and cared for.</span>
             </p>
           </div>
 
           {/* Caregiver Link Status Bar */}
-          <div className="max-w-xl mx-auto p-3 rounded-2xl bg-slate-950/60 border border-purple-900/30 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold mb-6">
-            <div className="flex items-center gap-2 text-left">
-              <span className="text-xl">🩺</span>
+          <div className="max-w-xl mx-auto p-3.5 rounded-2xl bg-[#EAF2EE] border border-[#C8DDD4] flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold mb-6">
+            <div className="flex items-center gap-2.5 text-left">
+              <span className="text-2xl">🩺</span>
               <div>
-                <span className="text-purple-300 font-bold block">
+                <span className="text-[#263B42] font-bold block">
                   {caregiverInfo?.name ? `Caregiver: ${caregiverInfo.name}` : 'No Caregiver Linked'}
                 </span>
-                <span className="text-[11px] text-slate-400">
-                  {caregiverInfo?.email ? caregiverInfo.email : 'Link your caregiver for 24/7 safety alerts'}
+                <span className="text-xs text-[#566D75]">
+                  {caregiverInfo?.email ? caregiverInfo.email : 'Link caregiver for 24/7 emergency safety alerts'}
                 </span>
               </div>
             </div>
             <button
               onClick={() => setShowLinkModal(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 font-bold text-xs transition-all active:scale-95 whitespace-nowrap"
+              className="px-3.5 py-1.5 rounded-xl bg-[#FFFDF7] hover:bg-[#F7F3E8] text-[#397F7A] border border-[#8DB7A5] font-bold text-xs transition-all active:scale-95 whitespace-nowrap shadow-sm"
             >
               {caregiverInfo ? 'Change 🔗' : 'Connect Caregiver 🔗'}
             </button>
@@ -384,10 +370,10 @@ const Dashboard = () => {
             <button 
               onClick={handleSpeakGreeting}
               disabled={isSpeakingState}
-              className={`min-h-14 py-3 px-8 rounded-2xl text-xl font-bold flex items-center justify-center mx-auto gap-3 transition-all active:scale-95 shadow-lg ${
+              className={`min-h-14 py-3 px-8 rounded-2xl text-lg font-bold flex items-center justify-center mx-auto gap-3 transition-all active:scale-98 shadow-sm ${
                 isSpeakingState 
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_30px_rgba(147,51,234,0.6)]'
+                ? 'bg-[#EAF2EE] text-[#849CA4] cursor-not-allowed' 
+                : 'bg-[#397F7A] hover:bg-[#2E6B66] text-white'
               }`}
             >
               <span className="text-2xl">🔊</span>
@@ -399,21 +385,21 @@ const Dashboard = () => {
 
       {/* ACTIVE REMINDERS SECTION */}
       {reminders.length > 0 && (
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <span className="text-3xl animate-bounce">🔔</span>
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#FFFDF7] border-2 border-[#EED7A6] shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl text-[#D9A441]">🔔</span>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-amber-300">Caregiver Reminders</h3>
-                <p className="text-sm text-amber-200/80 font-bold">Popping sound & flash notifications active</p>
+                <h3 className="text-2xl font-extrabold text-[#263B42]">Today's Reminders</h3>
+                <p className="text-sm text-[#566D75] font-medium">Gentle spoken alerts and reminders</p>
               </div>
             </div>
-            <span className="px-3.5 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs sm:text-sm font-black">
+            <span className="px-3.5 py-1.5 bg-[#FBF4E4] text-[#D9A441] border border-[#EED7A6] rounded-full text-xs sm:text-sm font-bold">
               {reminders.length} PENDING
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {reminders.map(rem => {
               const d = new Date(rem.scheduledTime);
               const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -421,23 +407,16 @@ const Dashboard = () => {
               return (
                 <div 
                   key={rem._id}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-amber-500/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg"
+                  className="p-4 sm:p-5 rounded-2xl bg-[#F7F3E8] border border-[#EADBCC] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-3xl flex-shrink-0">
+                    <div className="w-14 h-14 rounded-2xl bg-[#FFFDF7] text-[#D9A441] border border-[#EED7A6] flex items-center justify-center text-3xl flex-shrink-0">
                       ⏰
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xl sm:text-2xl font-black text-white">{rem.title}</h4>
-                        {rem.promptCount > 0 && (
-                          <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 font-bold">
-                            Prompt {rem.promptCount}/3
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-base font-bold text-amber-300">
-                        Scheduled for: <strong className="text-white text-lg">{timeStr}</strong>
+                      <h4 className="text-xl font-extrabold text-[#263B42]">{rem.title}</h4>
+                      <p className="text-sm font-semibold text-[#566D75]">
+                        Scheduled for: <strong className="text-[#263B42]">{timeStr}</strong>
                       </p>
                     </div>
                   </div>
@@ -449,15 +428,15 @@ const Dashboard = () => {
                           playPop();
                           speak(`Reminder: ${rem.title}. Scheduled for ${timeStr}`);
                         }}
-                        className="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-2xl active:scale-95 transition-all"
-                        title="Read aloud with popping chime"
+                        className="p-3.5 rounded-xl bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#397F7A] border border-[#C8DDD4] text-xl active:scale-95 transition-all shadow-sm"
+                        title="Read aloud"
                       >
                         🔊
                       </button>
                     )}
                     <button
                       onClick={() => handleCompleteReminder(rem)}
-                      className="flex-1 sm:flex-none px-6 sm:px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="flex-1 sm:flex-none px-6 sm:px-8 py-3.5 bg-[#4F8A5B] hover:bg-[#43774E] text-white rounded-xl font-bold text-base shadow-sm transition-all active:scale-98 flex items-center justify-center gap-2"
                     >
                       <span>✓</span>
                       <span>I Did This</span>
@@ -472,28 +451,29 @@ const Dashboard = () => {
 
       {/* Main Feature Cards Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Today's Routine Card */}
-        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]`}>
+        
+        {/* Daily Routine Card */}
+        <div className="p-6 rounded-3xl flex flex-col justify-between bg-[#FFFDF7] border border-[#EADBCC] shadow-sm hover:border-[#8DB7A5] transition-all">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAF2EE] border border-[#C8DDD4] text-[#397F7A] flex items-center justify-center text-3xl mb-4">
               📋
             </div>
-            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Daily Routine</h3>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
+            <h3 className="text-xl font-extrabold mb-1.5 text-[#263B42]">Daily Routine</h3>
+            <p className="text-sm font-medium text-[#566D75] mb-6 leading-relaxed">
               Step-by-step checklist of meals, hygiene, medications, and wellness.
             </p>
           </div>
           <div className="space-y-2">
             <Link
               to="/patient/routine"
-              className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+              className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-bold flex items-center justify-center bg-[#397F7A] hover:bg-[#2E6B66] text-white transition-all active:scale-98 shadow-sm"
             >
               Open Checklist →
             </Link>
             <button
               onClick={handleResetRoutinesFromDashboard}
               disabled={resettingRoutine}
-              className="w-full py-2 px-3 rounded-lg text-xs font-bold text-amber-300 hover:text-amber-200 bg-slate-950 border border-slate-800 hover:border-amber-500/40 transition-all flex items-center justify-center gap-1"
+              className="w-full py-2 px-3 rounded-lg text-xs font-bold text-[#566D75] hover:text-[#263B42] bg-[#F7F3E8] border border-[#EADBCC] hover:bg-[#EAF2EE] transition-all flex items-center justify-center gap-1"
             >
               <span>🔄</span>
               <span>{resettingRoutine ? 'Resetting...' : 'Reset Tasks'}</span>
@@ -501,58 +481,58 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Cognitive Games Card */}
-        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
+        {/* Cognitive Brain Games Card */}
+        <div className="p-6 rounded-3xl flex flex-col justify-between bg-[#FFFDF7] border border-[#EADBCC] shadow-sm hover:border-[#8DB7A5] transition-all">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAF2EE] border border-[#C8DDD4] text-[#397F7A] flex items-center justify-center text-3xl mb-4">
               🧠
             </div>
-            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Brain Games</h3>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              Calming memory cards, melodic chimes, and everyday object matching.
+            <h3 className="text-xl font-extrabold mb-1.5 text-[#263B42]">Memory Games</h3>
+            <p className="text-sm font-medium text-[#566D75] mb-6 leading-relaxed">
+              Calming card matching, melodic pattern chimes, and everyday object quizzes.
             </p>
           </div>
           <Link
             to="/patient/games"
-            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-bold flex items-center justify-center bg-[#397F7A] hover:bg-[#2E6B66] text-white transition-all active:scale-98 shadow-sm"
           >
             Play Activities →
           </Link>
         </div>
 
-        {/* Memory Lane Reminiscence Card */}
-        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]`}>
+        {/* Family Album Memory Lane Card */}
+        <div className="p-6 rounded-3xl flex flex-col justify-between bg-[#FFFDF7] border border-[#EADBCC] shadow-sm hover:border-[#8DB7A5] transition-all">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAF2EE] border border-[#C8DDD4] text-[#397F7A] flex items-center justify-center text-3xl mb-4">
               🖼️
             </div>
-            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">Memory Lane</h3>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              Cherished family photos, comforting stories, and fun recall quizzes.
+            <h3 className="text-xl font-extrabold mb-1.5 text-[#263B42]">Family Album</h3>
+            <p className="text-sm font-medium text-[#566D75] mb-6 leading-relaxed">
+              Cherished family photographs, warm memories, and gentle recall activities.
             </p>
           </div>
           <Link
             to="/patient/memory-lane"
-            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-bold flex items-center justify-center bg-[#8DB7A5] hover:bg-[#79A391] text-[#263B42] transition-all active:scale-98 shadow-sm"
           >
-            Open Memories →
+            View Album →
           </Link>
         </div>
 
         {/* My Progress Card */}
-        <div className={`p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 ${cardStyle} hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]`}>
+        <div className="p-6 rounded-3xl flex flex-col justify-between bg-[#FFFDF7] border border-[#EADBCC] shadow-sm hover:border-[#8DB7A5] transition-all">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAF2EE] border border-[#C8DDD4] text-[#397F7A] flex items-center justify-center text-3xl mb-4">
               📊
             </div>
-            <h3 className="text-xl sm:text-2xl font-black mb-2 text-white">My Progress</h3>
-            <p className="text-xs sm:text-sm font-medium text-slate-300 mb-6 leading-relaxed">
-              See your activity achievements, scores, and cognitive milestones.
+            <h3 className="text-xl font-extrabold mb-1.5 text-[#263B42]">My Progress</h3>
+            <p className="text-sm font-medium text-[#566D75] mb-6 leading-relaxed">
+              Review your daily activity completions, stars, and milestones.
             </p>
           </div>
           <Link
             to="/patient/results"
-            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-black flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+            className="w-full min-h-12 py-3 px-4 rounded-xl text-base font-bold flex items-center justify-center bg-[#397F7A] hover:bg-[#2E6B66] text-white transition-all active:scale-98 shadow-sm"
           >
             Achievements →
           </Link>
