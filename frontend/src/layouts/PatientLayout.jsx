@@ -89,6 +89,19 @@ const PatientLayout = () => {
     navigate('/login');
   };
 
+  useEffect(() => {
+    if (fontSize === 'large') {
+      document.documentElement.style.fontSize = '118%';
+    } else if (fontSize === 'small') {
+      document.documentElement.style.fontSize = '90%';
+    } else {
+      document.documentElement.style.fontSize = '100%';
+    }
+    return () => {
+      document.documentElement.style.fontSize = '100%';
+    };
+  }, [fontSize]);
+
   const getFontSizeClass = () => {
     switch(fontSize) {
       case 'small': return 'text-sm';
