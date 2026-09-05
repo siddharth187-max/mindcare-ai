@@ -7,9 +7,7 @@ import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
 const PatientLayout = () => {
   const { logout, user } = useAuth();
-  const navigate = useNavigate();
   const [showEmergency, setShowEmergency] = useState(false);
-  const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showMobileAudioBanner, setShowMobileAudioBanner] = useState(false);
@@ -217,30 +215,6 @@ const PatientLayout = () => {
 
             {/* Accessibility & Quick Controls */}
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <div className="flex rounded-xl overflow-hidden border border-[#C8DDD4] bg-[#FFFDF7]">
-                <button 
-                  onClick={() => setFontSize('small')} 
-                  className={`px-3 py-1.5 text-sm font-bold transition-colors ${fontSize === 'small' ? 'bg-[#397F7A] text-white' : 'text-[#263B42] hover:bg-[#EAF2EE]'}`}
-                  title="Smaller Text"
-                >
-                  A-
-                </button>
-                <button 
-                  onClick={() => setFontSize('normal')} 
-                  className={`px-3 py-1.5 text-base font-bold border-l border-r border-[#C8DDD4] transition-colors ${fontSize === 'normal' ? 'bg-[#397F7A] text-white' : 'text-[#263B42] hover:bg-[#EAF2EE]'}`}
-                  title="Standard Text"
-                >
-                  A
-                </button>
-                <button 
-                  onClick={() => setFontSize('large')} 
-                  className={`px-3 py-1.5 text-lg font-bold transition-colors ${fontSize === 'large' ? 'bg-[#397F7A] text-white' : 'text-[#263B42] hover:bg-[#EAF2EE]'}`}
-                  title="Large Text"
-                >
-                  A+
-                </button>
-              </div>
-              
               <button 
                 onClick={() => setHighContrast(!highContrast)} 
                 className="min-h-11 px-3 py-1.5 rounded-xl font-bold border border-[#C8DDD4] bg-[#FFFDF7] hover:bg-[#EAF2EE] text-[#263B42] text-xs sm:text-sm transition-all shadow-sm"
